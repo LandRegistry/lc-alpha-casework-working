@@ -1,8 +1,13 @@
 import os
 
+
 class Config(object):
     DEBUG = False
 
+
 class DevelopmentConfig(object):
     DEBUG = True
-    B2B_PROCESSOR_URL = "http://localhost:5002"
+    DATABASE_NAME = 'working'
+    DATABASE_USER = 'landcharges'
+    DATABASE_PASSWORD = 'lcalpha'
+    DATABASE_HOST = 'localhost'
