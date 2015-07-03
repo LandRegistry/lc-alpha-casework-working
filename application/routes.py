@@ -15,8 +15,17 @@ def lodge_manual():
         return Response(status=415)
 
     data = request.get_json(force=True)
-    if 'application_type' not in data or 'date' not in data:
+
+    print(json.dumps(data))
+    if 'application_type' not in data or 'date' not in data or 'debtor_name' not in data:
         return Response(status=400)
+
+    forenames = data['debtor_name']['forenames']
+    name_str = ''
+    for item in forenames:
+        name_str += '%s ' % item.strip()
+
+    name_str.strip()
 
     try:
         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
@@ -27,9 +36,12 @@ def lodge_manual():
 
     try:
         cursor = connection.cursor()
-        cursor.execute("INSERT INTO pending_application (application_data, date_received, application_type) " +
-                       "VALUES (%(json)s, %(date)s, %(type)s) RETURNING id", {"json": json.dumps(data), "date": data['date'],
-                                                                              "type": data['application_type']})
+        cursor.execute("INSERT INTO pending_application (application_data, date_received, "
+                       "application_type, forenames, surname) " +
+                       "VALUES (%(json)s, %(date)s, %(type)s, %(forenames)s, %(surname)s) "
+                       "RETURNING id", {"json": json.dumps(data), "date": data['date'],
+                                        "type": data['application_type'], "forenames": name_str,
+                                        "surname": data['debtor_name']['surname']})
         id = cursor.fetchone()[0]
     except Exception as error:
         return Response("Failed to insert to database: {}".format(error), status=500)
@@ -37,4 +49,67 @@ def lodge_manual():
     connection.commit()
     cursor.close()
     connection.close()
-    return Response(json.dumps({'id': id}), status=202, mimetype='application/json')
+    return Response(json.dumps({'id': id}), status=200, mimetype='application/json')
+
+
+
+@app.route('/search/<int:id>', methods=["GET"])
+def get(id):
+    try:
+        connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
+            app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
+            app.config['DATABASE_PASSWORD']))
+    except Exception as error:
+        print(error)
+        return Response("Failed to connect to database", status=500)
+
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT application_data FROM pending_application WHERE id=%(id)s", {"id": id})
+    except Exception as error:
+        print(error)
+        return Response("Failed to select from database", status=500)
+
+    rows = cursor.fetchall()
+    if len(rows) == 0:
+        return Response(status=404)
+
+    data = json.dumps(rows[0][0], ensure_ascii=False)
+    print(type(data))
+    print(data)
+
+    return Response(data, status=200, mimetype='application/json')
+
+@app.route('/search_by_name', methods=["POST"])
+def get_by_name():
+    try:
+        data = (request.get_json(force=True))
+        forenames = data['forenames']
+        surname = data['surname']
+
+        connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
+            app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
+            app.config['DATABASE_PASSWORD']))
+    except Exception as error:
+        print(error)
+        return Response("Failed to connect to database", status=500)
+
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT id, forenames, surname, application_data FROM pending_application "
+                       "WHERE trim(both ' ' from forenames)=%(forenames)s AND surname=%(surname)s",
+                       {"forenames": forenames, "surname": surname})
+
+    except Exception as error:
+        print(error)
+        return Response("Failed to select from database", status=500)
+
+    rows = cursor.fetchall()
+    if len(rows) == 0:
+        return Response(status=404)
+
+    data = json.dumps(rows, ensure_ascii=False)
+    print(type(data))
+    print(data)
+
+    return Response(data, status=200, mimetype='application/json')
