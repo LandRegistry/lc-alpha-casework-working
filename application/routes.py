@@ -2,6 +2,7 @@ from application import app
 from flask import Response, request
 import json
 import psycopg2
+import psycopg2.extras
 
 
 @app.route('/', methods=["GET"])
@@ -95,21 +96,25 @@ def get_by_name():
         return Response("Failed to connect to database", status=500)
 
     try:
-        cursor = connection.cursor()
-        cursor.execute("SELECT id, forenames, surname, application_data FROM pending_application "
-                       "WHERE trim(both ' ' from forenames)=%(forenames)s AND surname=%(surname)s",
-                       {"forenames": forenames, "surname": surname})
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor.execute("SELECT application_data FROM pending_application "
+                       "WHERE trim(both ' ' from UPPER(forenames))=%(forenames)s AND UPPER(surname)=%(surname)s",
+                       {"forenames": forenames.upper(), "surname": surname.upper()})
 
     except Exception as error:
         print(error)
         return Response("Failed to select from database", status=500)
 
     rows = cursor.fetchall()
+
     if len(rows) == 0:
         return Response(status=404)
 
-    data = json.dumps(rows, ensure_ascii=False)
-    print(type(data))
-    print(data)
+    applications = []
+    for n in rows:
+        applications.append(n['application_data'])
+
+    data = json.dumps(applications, ensure_ascii=False)
+
 
     return Response(data, status=200, mimetype='application/json')
