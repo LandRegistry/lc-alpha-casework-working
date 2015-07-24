@@ -1,9 +1,12 @@
 from application import app
 from flask import Response, request
 import json
+import logging
 import psycopg2
 import psycopg2.extras
 
+
+valid_types = ['all', 'registration', 'search', 'amendment', 'cancellation', 'rectify']
 
 @app.route('/', methods=["GET"])
 def index():
@@ -28,6 +31,11 @@ def lodge_manual():
 
     name_str.strip()
 
+    status = "new"
+    assigned = ""
+    work_type = "registration"
+
+
     try:
         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
@@ -38,11 +46,13 @@ def lodge_manual():
     try:
         cursor = connection.cursor()
         cursor.execute("INSERT INTO pending_application (application_data, date_received, "
-                       "application_type, forenames, surname) " +
-                       "VALUES (%(json)s, %(date)s, %(type)s, %(forenames)s, %(surname)s) "
+                       "application_type, forenames, surname, status, assigned_to, work_type) " +
+                       "VALUES (%(json)s, %(date)s, %(type)s, %(forenames)s, %(surname)s, "
+                       "%(status)s, %(assigned)s, %(work_type)s) "
                        "RETURNING id", {"json": json.dumps(data), "date": data['date'],
                                         "type": data['application_type'], "forenames": name_str,
-                                        "surname": data['debtor_name']['surname']})
+                                        "surname": data['debtor_name']['surname'],
+                                        "status": status, "assigned": assigned, "work_type": work_type})
         id = cursor.fetchone()[0]
     except Exception as error:
         return Response("Failed to insert to database: {}".format(error), status=500)
@@ -116,5 +126,55 @@ def get_by_name():
 
     data = json.dumps(applications, ensure_ascii=False)
 
+
+    return Response(data, status=200, mimetype='application/json')
+
+
+@app.route('/work_list/<nature>', methods=["GET"])
+def get_work_list(nature):
+
+    if nature not in valid_types:
+        return Response("Error: '" + nature + "' is not one of the accepted work list types", status=400)
+
+    try:
+
+        connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
+            app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
+            app.config['DATABASE_PASSWORD']))
+    except Exception as error:
+        logging.error(error)
+        return Response("Failed to connect to database", status=500)
+
+    try:
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        if nature == "all":
+            cursor.execute("SELECT date_received, application_type, status, work_type, assigned_to "
+                           "FROM pending_application order by date_received")
+        else:
+            cursor.execute("SELECT date_received, application_type, status, work_type, assigned_to "
+                           "FROM pending_application "
+                           "WHERE work_type=%(nature)s order by date_received", {"nature": nature})
+
+    except Exception as error:
+        logging.error(error)
+        return Response("Failed to select from database", status=500)
+
+    rows = cursor.fetchall()
+
+    if len(rows) == 0:
+        return Response(status=404)
+
+    applications = []
+    for row in rows:
+        result = {
+            "date_received": str(row['date_received']),
+            "application_type": row['application_type'],
+            "status": row['status'],
+            "work_type": row['work_type'],
+            "assigned_to": row['assigned_to'],
+            }
+        applications.append(result)
+
+    data = json.dumps(applications, ensure_ascii=False)
 
     return Response(data, status=200, mimetype='application/json')
