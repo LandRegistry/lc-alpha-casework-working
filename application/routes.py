@@ -115,6 +115,56 @@ def get_by_name():
         applications.append(n['application_data'])
 
     data = json.dumps(applications, ensure_ascii=False)
-
-
     return Response(data, status=200, mimetype='application/json')
+
+
+def connect(cursor_factory=None):
+    connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
+        app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
+        app.config['DATABASE_PASSWORD']))
+    return connection.cursor(cursor_factory=cursor_factory)
+
+
+def complete(cursor):
+    cursor.connection.commit()
+    cursor.close()
+    cursor.connection.close()
+
+
+@app.route('/error', methods=["GET", "POST"])
+def error():
+    if request.method == "GET":
+
+        data = {}
+        return Response(json.dumps(data), status=200)
+    elif request.method == "POST":
+        data = (request.get_json(force=True))
+        cursor = connect()
+        cursor.execute("INSERT INTO errors (date_logged, source, data) " +
+                       "VALUES (%(date)s, %(source)s, %(data)s ) RETURNING id",
+                       {
+                           "date": data["date"],
+                           "source": data["source"],
+                           "data": json.dumps(data["data"])
+                       })
+        new_id = cursor.fetchone()[0]
+        complete(cursor)
+        return Response(json.dumps({"id": new_id}), status=201)
+
+
+@app.route('/errors', methods=["GET"])
+def get_errors():
+    cursor = connect(psycopg2.extras.DictCursor)
+    cursor.execute("SELECT date_logged, source, data FROM ERRORS")
+    rows = cursor.fetchall()
+
+    result = []
+    for row in rows:
+        result.append({
+            "date": row["date_logged"],
+            "source": row["source"],
+            "data": row["data"]
+        })
+
+    complete(cursor)
+    return Response(json.dumps(result), status=200)
