@@ -161,7 +161,7 @@ def get_errors():
     result = []
     for row in rows:
         result.append({
-            "date": row["date_logged"],
+            "date": str(row["date_logged"]),
             "source": row["source"],
             "data": row["data"]
         })
