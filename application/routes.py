@@ -6,7 +6,7 @@ import psycopg2
 import psycopg2.extras
 
 
-valid_types = ['all', 'registration', 'search', 'amendment', 'cancellation', 'rectify']
+valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
 
 @app.route('/', methods=["GET"])
 def index():
@@ -33,8 +33,7 @@ def lodge_manual():
 
     status = "new"
     assigned = ""
-    work_type = "registration"
-
+    work_type = "bank_regn"
 
     try:
         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
@@ -91,6 +90,7 @@ def get(id):
 
     return Response(data, status=200, mimetype='application/json')
 
+
 @app.route('/search_by_name', methods=["POST"])
 def get_by_name():
     try:
@@ -126,15 +126,20 @@ def get_by_name():
 
     data = json.dumps(applications, ensure_ascii=False)
 
-
     return Response(data, status=200, mimetype='application/json')
 
 
-@app.route('/work_list/<nature>', methods=["GET"])
-def get_work_list(nature):
+@app.route('/work_list/<list_type>', methods=["GET"])
+def get_work_list(list_type):
 
-    if nature not in valid_types:
-        return Response("Error: '" + nature + "' is not one of the accepted work list types", status=400)
+    if list_type not in valid_types:
+        return Response("Error: '" + list_type + "' is not one of the accepted work list types", status=400)
+
+    bank_regn_type = ''
+    if list_type == 'pab':
+        bank_regn_type = 'PA(B)'
+    elif list_type == 'wob':
+        bank_regn_type = 'WO(B)'
 
     try:
 
@@ -147,13 +152,18 @@ def get_work_list(nature):
 
     try:
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        if nature == "all":
-            cursor.execute("SELECT date_received, application_type, status, work_type, assigned_to "
+        if list_type == 'all':
+            cursor.execute("SELECT id, date_received, application_type, status, work_type, assigned_to "
                            "FROM pending_application order by date_received")
-        else:
-            cursor.execute("SELECT date_received, application_type, status, work_type, assigned_to "
+        elif bank_regn_type != '':
+            cursor.execute("SELECT id, date_received, application_type, status, work_type, assigned_to "
                            "FROM pending_application "
-                           "WHERE work_type=%(nature)s order by date_received", {"nature": nature})
+                           "WHERE application_type=%(bank_regn_type)s order by date_received",
+                           {"bank_regn_type": bank_regn_type})
+        else:
+            cursor.execute("SELECT id, date_received, application_type, status, work_type, assigned_to "
+                           "FROM pending_application "
+                           "WHERE work_type=%(list_type)s order by date_received", {"list_type": list_type})
 
     except Exception as error:
         logging.error(error)
@@ -161,19 +171,20 @@ def get_work_list(nature):
 
     rows = cursor.fetchall()
 
-    if len(rows) == 0:
-        return Response(status=404)
-
     applications = []
-    for row in rows:
-        result = {
-            "date_received": str(row['date_received']),
-            "application_type": row['application_type'],
-            "status": row['status'],
-            "work_type": row['work_type'],
-            "assigned_to": row['assigned_to'],
-            }
-        applications.append(result)
+
+    if len(rows) > 0:
+
+        for row in rows:
+            result = {
+                "appn_id": row['id'],
+                "date_received": str(row['date_received']),
+                "application_type": row['application_type'],
+                "status": row['status'],
+                "work_type": row['work_type'],
+                "assigned_to": row['assigned_to'],
+                }
+            applications.append(result)
 
     data = json.dumps(applications, ensure_ascii=False)
 
