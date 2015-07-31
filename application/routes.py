@@ -39,6 +39,7 @@ def lodge_manual():
         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
             app.config['DATABASE_PASSWORD']))
+
     except Exception as error:
         return Response("Failed to connect to database: {}".format(error), status=500)
 
@@ -60,8 +61,6 @@ def lodge_manual():
     cursor.close()
     connection.close()
     return Response(json.dumps({'id': id}), status=200, mimetype='application/json')
-
-
 
 @app.route('/search/<int:id>', methods=["GET"])
 def get(id):
@@ -85,8 +84,9 @@ def get(id):
         return Response(status=404)
 
     data = json.dumps(rows[0][0], ensure_ascii=False)
-    print(type(data))
-    print(data)
+
+    cursor.close()
+    connection.close()
 
     return Response(data, status=200, mimetype='application/json')
 
@@ -119,12 +119,14 @@ def get_by_name():
 
     if len(rows) == 0:
         return Response(status=404)
-
     applications = []
     for n in rows:
         applications.append(n['application_data'])
 
     data = json.dumps(applications, ensure_ascii=False)
+
+    cursor.close()
+    connection.close()
 
     return Response(data, status=200, mimetype='application/json')
 
@@ -176,6 +178,7 @@ def get_work_list(list_type):
     if len(rows) > 0:
 
         for row in rows:
+            print(row)
             result = {
                 "appn_id": row['id'],
                 "date_received": str(row['date_received']),
@@ -187,5 +190,8 @@ def get_work_list(list_type):
             applications.append(result)
 
     data = json.dumps(applications, ensure_ascii=False)
+
+    cursor.close()
+    connection.close()
 
     return Response(data, status=200, mimetype='application/json')
