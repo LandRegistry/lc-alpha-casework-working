@@ -8,9 +8,39 @@ import psycopg2.extras
 
 valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
 
+
 @app.route('/', methods=["GET"])
 def index():
     return Response(status=200)
+
+
+@app.route('/manual', methods=["POST"])
+def manual():
+    if request.headers['Content-Type'] != "application/json":
+        return Response(status=415)
+
+    data = request.get_json(force=True)
+    if 'application_type' not in data \
+            or 'date' not in data \
+            or "work_type" not in data \
+            or 'document_id' not in data:
+        return Response(status=400)
+
+    app_data = {
+        "document_id": data['document_id']
+    }
+
+    cursor = connect()
+    cursor.execute("INSERT INTO pending_application (application_data, date_received, "
+                   "application_type, status, work_type) " +
+                   "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s) "
+                   "RETURNING id", {"json": json.dumps(app_data), "date": data['date'],
+                                    "type": data['application_type'],
+                                    "status": "new", "work_type": data['work_type']})
+    item_id = cursor.fetchone()[0]
+    complete(cursor)
+    return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
+
 
 
 @app.route('/lodge_manual', methods=['POST'])
