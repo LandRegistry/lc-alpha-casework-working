@@ -14,7 +14,7 @@ def index():
     return Response(status=200)
 
 
-@app.route('/manual', methods=["POST"])
+@app.route('/workitem', methods=["POST"])
 def manual():
     if request.headers['Content-Type'] != "application/json":
         return Response(status=415)
@@ -41,6 +41,18 @@ def manual():
     complete(cursor)
     return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
 
+
+@app.route('/workitem/<int:id>', methods=["DELETE"])
+def delete_item(item_id):
+    cursor = connect()
+    cursor.execute("DELETE FROM pending_application WHERE id=%(id)s",
+                   {"id": item_id})
+    rows = cursor.rowcount
+    complete(cursor)
+    if rows == 0:
+        return Response(status=404)
+    else:
+        return Response(status=204)
 
 
 @app.route('/lodge_manual', methods=['POST'])
