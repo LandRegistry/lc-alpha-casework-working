@@ -42,7 +42,7 @@ def manual():
     return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
 
 
-@app.route('/workitem/<int:id>', methods=["DELETE"])
+@app.route('/workitem/<int:item_id>', methods=["DELETE"])
 def delete_item(item_id):
     cursor = connect()
     cursor.execute("DELETE FROM pending_application WHERE id=%(id)s",
