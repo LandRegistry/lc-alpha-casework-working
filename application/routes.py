@@ -259,7 +259,7 @@ def get_work_list(list_type):
         else:
             cursor.execute("SELECT id, date_received, application_type, status, work_type, assigned_to "
                            "FROM pending_application "
-                           "WHERE work_type=%(list_type)s order by date_received desc", {"list_type": list_type})
+                           "WHERE work_type=%(list_type)s order by date_received", {"list_type": list_type})
 
     except Exception as error:
         logging.error(error)
