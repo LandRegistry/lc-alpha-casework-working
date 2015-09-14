@@ -23,9 +23,9 @@
 41|"{""document_id"": 40}"|2015-08-21 10:56:18|PA(B)|||new||cancel
 42|"{""document_id"": 42}"|2015-08-21 10:56:21|WO(B)|||new||amend
 43|"{""document_id"": 43}"|2015-08-21 10:56:23|PA(B)|||new||amend
-44|"{""document_id"": 40}"|2015-08-21 10:57:22|search|||new||search
-45|"{""document_id"": 44}"|2015-08-21 10:57:23|search|||new||search
-46|"{""document_id"": 39}"|2015-08-21 10:57:26|search|||new||search
-47|"{""document_id"": 40}"|2015-08-21 10:58:10|oc|||new||oc
-48|"{""document_id"": 43}"|2015-08-21 10:58:23|oc|||new||oc
-49|"{""document_id"": 44}"|2015-08-21 10:59:44|oc|||new||oc
+44|"{""document_id"": 40}"|2015-08-21 10:57:22|Search|||new||search
+45|"{""document_id"": 44}"|2015-08-21 10:57:23|Search|||new||search
+46|"{""document_id"": 39}"|2015-08-21 10:57:26|Search|||new||search
+47|"{""document_id"": 40}"|2015-08-21 10:58:10|OC|||new||oc
+48|"{""document_id"": 43}"|2015-08-21 10:58:23|OC|||new||oc
+49|"{""document_id"": 44}"|2015-08-21 10:59:44|OC|||new||oc
