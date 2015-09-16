@@ -104,6 +104,7 @@ def lodge_manual():
     connection.close()
     return Response(json.dumps({'id': id}), status=200, mimetype='application/json')
 
+
 @app.route('/search/<int:id>', methods=["GET"])
 def get(id):
     try:
@@ -238,11 +239,10 @@ def get_work_list(list_type):
         bank_regn_type = 'WO(B)'
 
     try:
-
         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
             app.config['DATABASE_PASSWORD']))
-    except Exception as error:
+    except psycopg2.OperationalError as error:
         logging.error(error)
         return Response("Failed to connect to database", status=500)
 
@@ -280,7 +280,7 @@ def get_work_list(list_type):
                 "status": row['status'],
                 "work_type": row['work_type'],
                 "assigned_to": row['assigned_to'],
-                }
+            }
             applications.append(result)
 
     data = json.dumps(applications, ensure_ascii=False)
@@ -289,4 +289,3 @@ def get_work_list(list_type):
     connection.close()
 
     return Response(data, status=200, mimetype='application/json')
-

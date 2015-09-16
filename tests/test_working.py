@@ -34,6 +34,7 @@ class MockCursor:
     def fetchall(self):
         return self.results
 
+
 dir_ = os.path.dirname(__file__)
 valid_data = open(os.path.join(dir_, 'data/valid_data.json'), 'r').read()
 search_data = open(os.path.join(dir_, 'data/search_data.json'), 'r').read()
@@ -46,7 +47,6 @@ worklist_data = open(os.path.join(dir_, 'data/worklist_data.json'), 'r').read()
 mock_connection = MockConnection([])
 mock_connection_no_data = MockConnection("")
 mock_connection_valid_data = MockConnection([[json.loads(valid_data)]])
-
 
 row = {'application_data': json.loads(search_name_result)}
 mock_connection_valid_data_dict = MockConnection([row])
