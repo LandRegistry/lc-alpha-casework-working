@@ -82,8 +82,8 @@ def lodge_manual():
             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
             app.config['DATABASE_PASSWORD']))
 
-    except Exception as error:
-        return Response("Failed to connect to database: {}".format(error), status=500)
+    except psycopg2.OperationalError as exception:
+        return Response("Failed to connect to database: {}".format(exception), status=500)
 
     try:
         cursor = connection.cursor()
@@ -95,31 +95,31 @@ def lodge_manual():
                                         "type": data['application_type'], "forenames": name_str,
                                         "surname": data['debtor_name']['surname'],
                                         "status": status, "assigned": assigned, "work_type": work_type})
-        id = cursor.fetchone()[0]
-    except Exception as error:
-        return Response("Failed to insert to database: {}".format(error), status=500)
+        appn_id = cursor.fetchone()[0]
+    except psycopg2.OperationalError as exception:
+        return Response("Failed to insert to database: {}".format(exception), status=500)
 
     connection.commit()
     cursor.close()
     connection.close()
-    return Response(json.dumps({'id': id}), status=200, mimetype='application/json')
+    return Response(json.dumps({'id': appn_id}), status=200, mimetype='application/json')
 
 
-@app.route('/search/<int:id>', methods=["GET"])
-def get(id):
+@app.route('/search/<int:appn_id>', methods=["GET"])
+def get(appn_id):
     try:
         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
             app.config['DATABASE_PASSWORD']))
-    except Exception as error:
-        print(error)
+    except psycopg2.OperationalError as exception:
+        print(exception)
         return Response("Failed to connect to database", status=500)
 
     try:
         cursor = connection.cursor()
-        cursor.execute("SELECT application_data FROM pending_application WHERE id=%(id)s", {"id": id})
-    except Exception as error:
-        print(error)
+        cursor.execute("SELECT application_data FROM pending_application WHERE id=%(id)s", {"id": appn_id})
+    except psycopg2.OperationalError as exception:
+        print(exception)
         return Response("Failed to select from database", status=500)
 
     rows = cursor.fetchall()
@@ -144,8 +144,8 @@ def get_by_name():
         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
             app.config['DATABASE_PASSWORD']))
-    except Exception as error:
-        print(error)
+    except psycopg2.OperationalError as exception:
+        print(exception)
         return Response("Failed to connect to database", status=500)
 
     try:
@@ -154,8 +154,8 @@ def get_by_name():
                        "WHERE trim(both ' ' from UPPER(forenames))=%(forenames)s AND UPPER(surname)=%(surname)s",
                        {"forenames": forenames.upper(), "surname": surname.upper()})
 
-    except Exception as error:
-        print(error)
+    except psycopg2.OperationalError as exception:
+        print(exception)
         return Response("Failed to select from database", status=500)
 
     rows = cursor.fetchall()
@@ -163,8 +163,8 @@ def get_by_name():
     if len(rows) == 0:
         return Response(status=404)
     applications = []
-    for n in rows:
-        applications.append(n['application_data'])
+    for row in rows:
+        applications.append(row['application_data'])
 
     data = json.dumps(applications, ensure_ascii=False)
 
@@ -242,8 +242,8 @@ def get_work_list(list_type):
         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
             app.config['DATABASE_PASSWORD']))
-    except psycopg2.OperationalError as error:
-        logging.error(error)
+    except psycopg2.OperationalError as exception:
+        logging.error(exception)
         return Response("Failed to connect to database", status=500)
 
     try:
@@ -261,27 +261,23 @@ def get_work_list(list_type):
                            "FROM pending_application "
                            "WHERE work_type=%(list_type)s order by date_received", {"list_type": list_type})
 
-    except Exception as error:
-        logging.error(error)
+    except psycopg2.OperationalError as exception:
+        logging.error(exception)
         return Response("Failed to select from database", status=500)
 
     rows = cursor.fetchall()
-
     applications = []
 
-    if len(rows) > 0:
-
-        for row in rows:
-            print(row)
-            result = {
-                "appn_id": row['id'],
-                "date_received": str(row['date_received']),
-                "application_type": row['application_type'],
-                "status": row['status'],
-                "work_type": row['work_type'],
-                "assigned_to": row['assigned_to'],
-            }
-            applications.append(result)
+    for row in rows:
+        result = {
+            "appn_id": row['id'],
+            "date_received": str(row['date_received']),
+            "application_type": row['application_type'],
+            "status": row['status'],
+            "work_type": row['work_type'],
+            "assigned_to": row['assigned_to'],
+        }
+        applications.append(result)
 
     data = json.dumps(applications, ensure_ascii=False)
 
