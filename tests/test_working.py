@@ -1,5 +1,6 @@
 from application.routes import app
 from unittest import mock
+import psycopg2
 import os
 import json
 
@@ -157,7 +158,7 @@ class TestWorking:
         response = self.app.get('/work_list/all', data=worklist_data, headers=headers)
         assert response.status_code == 200
 
-    @mock.patch('psycopg2.connect', side_effect=Exception('Fail'))
+    @mock.patch('psycopg2.connect', side_effect=psycopg2.OperationalError('Fail'))
     def test__work_list_connect_failed(self, mock_connect):
         headers = {'Content-Type': 'application/json'}
         response = self.app.get('/work_list/all', data=worklist_data, headers=headers)

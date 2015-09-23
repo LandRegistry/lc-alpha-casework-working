@@ -1,0 +1,6 @@
+{
+  "name": "working",
+  "tables": [
+    "pending_application"
+  ]
+}
