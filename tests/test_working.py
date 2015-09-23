@@ -89,7 +89,7 @@ class TestWorking:
         response = self.app.post('/lodge_manual', data=no_ref, headers=headers)
         assert response.status_code == 400
 
-    @mock.patch('psycopg2.connect', side_effect=Exception('Fail'))
+    @mock.patch('psycopg2.connect', side_effect=psycopg2.OperationalError('Fail'))
     def test_connect_failed(self, mock_connect):
         headers = {'Content-Type': 'application/json'}
         response = self.app.post('/lodge_manual', data=valid_data, headers=headers)
@@ -102,7 +102,7 @@ class TestWorking:
         data = json.loads(response.data.decode())
         assert data['application_ref'] == '1222'
 
-    @mock.patch('psycopg2.connect', side_effect=Exception('Fail'))
+    @mock.patch('psycopg2.connect', side_effect=psycopg2.OperationalError('Fail'))
     def test_get_connect_failed(self, mock_connect):
         response = self.app.get('/search/42', data=valid_data)
         assert response.status_code == 500
@@ -128,7 +128,7 @@ class TestWorking:
         response = self.app.post('/search_by_name', data=search_data, headers=headers)
         assert response.status_code == 404
 
-    @mock.patch('psycopg2.connect', side_effect=Exception('Fail'))
+    @mock.patch('psycopg2.connect', side_effect=psycopg2.OperationalError('Fail'))
     def test__get_by_name_connect_failed(self, mock_connect):
         headers = {'Content-Type': 'application/json'}
         response = self.app.post('/search_by_name', data=search_data, headers=headers)
