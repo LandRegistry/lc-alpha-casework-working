@@ -29,3 +29,4 @@
 47|"{""document_id"": 47}"|2015-08-21 10:58:10|OC|||new||oc
 48|"{""document_id"": 47}"|2015-08-21 10:58:23|OC|||new||oc
 49|"{""document_id"": 47}"|2015-08-21 10:59:44|OC|||new||oc
+50|"{""document_id"": 49}"|2015-08-21 10:59:55|Full Search|||new||search
