@@ -6,11 +6,12 @@ import json
 
 
 class MockConnection:
-    def __init__(self, results):
+    def __init__(self, results, del_flag=None):
         self.results = results
+        self.del_flag = del_flag
 
     def cursor(self, **kwargs):
-        return MockCursor(self.results)
+        return MockCursor(self.results, self, self.del_flag)
 
     def commit(self):
         pass
@@ -20,8 +21,14 @@ class MockConnection:
 
 
 class MockCursor:
-    def __init__(self, results):
+    def __init__(self, results, conn, del_flag):
         self.results = results
+        self.connection = conn
+        if del_flag == 'Y':
+            count = 0
+        else:
+            count = 1
+        self.rowcount = count
 
     def execute(self, *args):
         pass
@@ -44,6 +51,8 @@ no_ref = open(os.path.join(dir_, 'data/no_type_data.json'), 'r').read()
 no_data = open(os.path.join(dir_, 'data/no_data.json'), 'r').read()
 search_name_result = open(os.path.join(dir_, 'data/search_name_result.json'), 'r').read()
 worklist_data = open(os.path.join(dir_, 'data/worklist_data.json'), 'r').read()
+work_item_data = open(os.path.join(dir_, 'data/workitem_data.json'), 'r').read()
+error_data = open(os.path.join(dir_, 'data/error_data.json'), 'r').read()
 
 mock_connection = MockConnection([])
 mock_connection_no_data = MockConnection("")
@@ -53,6 +62,8 @@ row = {'application_data': json.loads(search_name_result)}
 mock_connection_valid_data_dict = MockConnection([row])
 
 mock_worklist_connection = MockConnection([json.loads(worklist_data)])
+mock_worklist_connection_del = MockConnection([json.loads(worklist_data)], 'Y')
+mock_error_connection = MockConnection([json.loads(error_data)])
 
 
 class TestWorking:
@@ -168,4 +179,51 @@ class TestWorking:
     def test_get_other_list(self, mock_connect):
         headers = {'Content-Type': 'application/json'}
         response = self.app.get('/work_list/amend', data=worklist_data, headers=headers)
+        assert response.status_code == 200
+
+    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    def test_work_item_insert(self, mock_connect):
+        headers = {'Content-Type': 'application/json'}
+        response = self.app.post('/workitem', data=work_item_data, headers=headers)
+        assert response.status_code == 200
+
+    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    def test_work_item_invalid_data(self, mock_connect):
+        headers = {'Content-Type': 'application/json'}
+        response = self.app.post('/workitem', data=worklist_data, headers=headers)
+        assert response.status_code == 400
+
+    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    def test_work_item_invalid_header(self, mock_connect):
+        headers = {'Content-Type': 'text'}
+        response = self.app.post('/workitem', data=work_item_data, headers=headers)
+        assert response.status_code == 415
+
+    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection_del)
+    def test_work_item_delete_fail(self, mock_connect):
+        headers = {'Content-Type': 'application/json'}
+        response = self.app.delete('/workitem/16', headers=headers)
+        assert response.status_code == 404
+
+    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    def test_work_item_delete(self, mock_connect):
+        headers = {'Content-Type': 'application/json'}
+        response = self.app.delete('/workitem/16', headers=headers)
+        assert response.status_code == 204
+
+    def test_error_get(self):
+        headers = {'Content-Type': 'application/json'}
+        response = self.app.get('/error', headers=headers)
+        assert response.status_code == 200
+
+    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    def test_error_post(self, mock_connect):
+        headers = {'Content-Type': 'application/json'}
+        response = self.app.post('/error', data=error_data, headers=headers)
+        assert response.status_code == 201
+
+    @mock.patch('psycopg2.connect', return_value=mock_error_connection)
+    def test_errors(self, mock_connect):
+        headers = {'Content-Type': 'application/json'}
+        response = self.app.get('/errors', data=error_data, headers=headers)
         assert response.status_code == 200
