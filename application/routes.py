@@ -42,6 +42,38 @@ def manual():
     return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
 
 
+@app.route('/workitems', methods=['DELETE'])
+def delete_workitems():
+    cursor = connect()
+    cursor.execute("DELETE FROM pending_application")
+    complete(cursor)
+    return Response(status=200)
+
+
+@app.route('/workitem/bulk', methods=["POST"])
+def bulk_load():
+    data = request.get_json(force=True)
+    for item in data:
+        if 'application_type' not in item or 'date' not in item or "work_type" not in item or 'document_id' not in item:
+            return Response(status=400)
+
+    items = []
+    cursor = connect()
+    for item in data:
+        app_data = {
+            "document_id": item['document_id']
+        }
+        cursor.execute("INSERT INTO pending_application (application_data, date_received, "
+                       "application_type, status, work_type) " +
+                       "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s) "
+                       "RETURNING id", {"json": json.dumps(app_data), "date": item['date'],
+                                        "type": item['application_type'],
+                                        "status": "new", "work_type": item['work_type']})
+        items.append(cursor.fetchone()[0])
+    complete(cursor)
+    return Response(json.dumps({'ids': items}), status=200, mimetype='application/json')
+
+
 @app.route('/workitem/<int:item_id>', methods=["DELETE"])
 def delete_item(item_id):
     cursor = connect()
