@@ -42,6 +42,14 @@ def manual():
     return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
 
 
+@app.route('/workitems', methods=['DELETE'])
+def delete_workitems():
+    cursor = connect()
+    cursor.execute("DELETE FROM pending_application")
+    complete(cursor)
+    return Response(status=200)
+
+
 @app.route('/workitem/bulk', methods=["POST"])
 def bulk_load():
     data = request.get_json(force=True)
