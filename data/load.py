@@ -11,6 +11,7 @@ stock_data = [
     {"date": "2015-11-05 13:45:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 27},
     {"date": "2015-11-05 13:45:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 28},
     {"date": "2015-11-05 13:45:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 29},
+    {"date": "2015-11-05 13:45:53", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 66},
     {"date": "2015-11-05 13:45:52", "work_type": "cancel", "application_type": "WO(B)", "document_id": 31},
     {"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 33},
     {"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 35},
