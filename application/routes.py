@@ -4,7 +4,9 @@ import json
 import logging
 import psycopg2
 import psycopg2.extras
-
+import requests
+from application.applications import insert_new_application, get_application_list, get_application_by_id, \
+    update_application_details
 
 valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
 
@@ -14,6 +16,129 @@ def index():
     return Response(status=200)
 
 
+def check_lc_health():
+    return requests.get(app.config['LAND_CHARGES_URI'] + '/health')
+
+
+application_dependencies = [
+    {
+        "name": "land-charges",
+        "check": check_lc_health
+    }
+]
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    result = {
+        'status': 'OK',
+        'dependencies': {}
+    }
+
+    status = 200
+    for dependency in application_dependencies:
+        response = dependency["check"]()
+        result['dependencies'][dependency['name']] = str(response.status_code) + ' ' + response.reason
+        data = json.loads(response.content.decode('utf-8'))
+        for key in data['dependencies']:
+            result['dependencies'][key] = data['dependencies'][key]
+
+    return Response(json.dumps(result), status=status, mimetype='application/json')
+
+
+# ============ APPLICATIONS ==============
+@app.route('/applications', methods=['GET'])
+def get_applications():
+    # Use 'type' parameter to filter
+    list_type = request.args['type']
+    if list_type not in valid_types:
+        return Response("Error: '" + list_type + "' is not one of the accepted work list types", status=400)
+
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    applications = get_application_list(cursor, list_type)
+    complete(cursor)
+
+    data = json.dumps(applications, ensure_ascii=False)
+    return Response(data, status=200, mimetype='application/json')
+
+
+@app.route('/applications', methods=['POST'])
+def create_application():
+    if request.headers['Content-Type'] != "application/json":
+        return Response(status=415)
+
+    data = request.get_json(force=True)
+    if 'application_type' not in data or 'date' not in data or "work_type" not in data or 'document_id' not in data:
+        return Response(status=400)
+
+    cursor = connect()
+    item_id = insert_new_application(cursor, data)
+    complete(cursor)
+    return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
+
+
+@app.route('/applications/<appn_id>', methods=['GET'])
+def get_application(appn_id):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    appn = get_application_by_id(cursor, appn_id)
+    complete(cursor)
+
+    if appn is None:
+        return Response(status=404)
+    return Response(json.dumps(appn), status=200, mimetype='application/json')
+
+
+@app.route('/applications/<appn_id>', methods=['PUT'])
+def update_application(appn_id):
+    # TODO: validate
+    data = request.get_json(force=True)
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    update_application_details(cursor, appn_id, data)
+    appn = get_application_by_id(cursor, appn_id)
+    complete(cursor)
+    return Response(json.dumps(appn), status=200)
+
+
+# =========== OTHER ROUTES ==============
+@app.route('/keyholders/<key_number>', methods=['GET'])
+def get_keyholder(key_number):
+    uri = app.config['LEGACY_ADAPTER_URI'] + 'keyholders/' + key_number
+    response = requests.get(uri)
+    return Response(response.data.decode(), status=response.status_code, mimetype='application/json')
+
+
+@app.route('/counties', methods=['GET'])
+def get_counties():
+    pass  # TODO: need counties table in here...
+
+
+@app.route('/complex_names/<name>', methods=['GET'])
+def get_complex_names(name):
+    uri = app.config['LEGACY_ADAPTER_URI'] + 'complex_names/' + name
+    response = requests.get(uri)
+    return Response(response.data.decode(), status=response.status_code, mimetype='application/json')
+
+
+@app.route('/complex_names/search', methods=['POST'])
+def get_complex_names_post():
+    data = request.get_json(force=True)
+    uri = app.config['LEGACY_ADAPTER_URI'] + 'complex_names/search'
+    response = requests.post(uri, data=data, headers={'Content-Type': 'application/json'})
+    return Response(response.data.decode(), status=response.status_code, mimetype='application/json')
+
+
+# ========= Dev Routes ==============
+@app.route('/applications', methods=['DELETE'])
+def clear_applications():
+    pass
+
+
+@app.route('/applications', methods=['PUT'])
+def bulk_add_applications():
+    pass
+
+
+# ========= OLD ROUTES ============
 @app.route('/workitem', methods=["POST"])
 def manual():
     if request.headers['Content-Type'] != "application/json":
@@ -217,45 +342,6 @@ def complete(cursor):
     cursor.connection.commit()
     cursor.close()
     cursor.connection.close()
-
-
-@app.route('/error', methods=["GET", "POST"])
-def error():
-    if request.method == "GET":
-
-        data = {}
-        return Response(json.dumps(data), status=200)
-    elif request.method == "POST":
-        data = (request.get_json(force=True))
-        cursor = connect()
-        cursor.execute("INSERT INTO errors (date_logged, source, data) " +
-                       "VALUES (%(date)s, %(source)s, %(data)s ) RETURNING id",
-                       {
-                           "date": data["date"],
-                           "source": data["source"],
-                           "data": json.dumps(data["data"])
-                       })
-        new_id = cursor.fetchone()[0]
-        complete(cursor)
-        return Response(json.dumps({"id": new_id}), status=201)
-
-
-@app.route('/errors', methods=["GET"])
-def get_errors():
-    cursor = connect(psycopg2.extras.DictCursor)
-    cursor.execute("SELECT date_logged, source, data FROM ERRORS")
-    rows = cursor.fetchall()
-
-    result = []
-    for row in rows:
-        result.append({
-            "date": str(row["date_logged"]),
-            "source": row["source"],
-            "data": row["data"]
-        })
-
-    complete(cursor)
-    return Response(json.dumps(result), status=200)
 
 
 @app.route('/work_list/<list_type>', methods=["GET"])
