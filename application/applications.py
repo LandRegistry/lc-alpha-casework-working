@@ -2,14 +2,12 @@ import json
 
 
 def insert_new_application(cursor, data):
-    app_data = {
-        "document_id": data['document_id']
-    }
+    app_data = data['application_data']
 
     cursor.execute("INSERT INTO pending_application (application_data, date_received, "
                    "application_type, status, work_type) " +
                    "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s) "
-                   "RETURNING id", {"json": json.dumps(app_data), "date": data['date'],
+                   "RETURNING id", {"json": json.dumps(app_data), "date": data['date_received'],
                                     "type": data['application_type'],
                                     "status": "new", "work_type": data['work_type']})
     item_id = cursor.fetchone()[0]
@@ -82,6 +80,11 @@ def update_application_details(cursor, appn_id, data):
                    })
 
 
+def delete_application(cursor, appn_id):
+    cursor.execute('DELETE from pending_application where id=%(id)s', {'id': appn_id})
+    return cursor.rowcount
+
+
 def complete_application(cursor, data):
     # Submit registration
     # Archive document
@@ -89,7 +92,7 @@ def complete_application(cursor, data):
     pass
 
 
-def bulk_insert_applications(cursor, data):
+def bulk_insert_applications(cursor, data):  # pragma: no cover
     items = []
     for item in data:
         app_data = {

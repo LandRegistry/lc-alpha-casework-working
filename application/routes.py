@@ -6,7 +6,7 @@ import psycopg2
 import psycopg2.extras
 import requests
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
-    update_application_details, bulk_insert_applications, complete_application
+    update_application_details, bulk_insert_applications, complete_application, delete_application
 
 valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
 
@@ -14,6 +14,13 @@ valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', '
 @app.route('/', methods=["GET"])
 def index():
     return Response(status=200)
+
+
+@app.errorhandler(Exception)
+def error_handler(err):
+    logging.error('========== Error Caught ===========')
+    logging.error(err)
+    return Response(str(err), status=500)
 
 
 def check_lc_health():
@@ -73,7 +80,8 @@ def create_application():
         action = request.args['action']
 
     data = request.get_json(force=True)
-    if 'application_type' not in data or 'date' not in data or "work_type" not in data or 'document_id' not in data:
+    print(data)
+    if 'application_type' not in data or 'date_received' not in data or "work_type" not in data or 'application_data' not in data:
         return Response(status=400)
 
     cursor = connect()
@@ -99,6 +107,17 @@ def get_application(appn_id):
     return Response(json.dumps(appn), status=200, mimetype='application/json')
 
 
+@app.route('/applications/<appn_id>', methods=['DELETE'])
+def remove_application(appn_id):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    rows = delete_application(cursor, appn_id)
+    complete(cursor)
+
+    if rows == 0:
+        return Response(status=404)
+    return Response(status=204, mimetype='application/json')
+
+
 @app.route('/applications/<appn_id>', methods=['PUT'])
 def update_application(appn_id):
     # TODO: validate
@@ -113,21 +132,26 @@ def update_application(appn_id):
 # =========== OTHER ROUTES ==============
 @app.route('/keyholders/<key_number>', methods=['GET'])
 def get_keyholder(key_number):
-    uri = app.config['LEGACY_ADAPTER_URI'] + 'keyholders/' + key_number
+    uri = app.config['LEGACY_ADAPTER_URI'] + '/keyholders/' + key_number
     response = requests.get(uri)
-    return Response(response.data.decode(), status=response.status_code, mimetype='application/json')
+    return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
 @app.route('/counties', methods=['GET'])
-def get_counties():
-    pass  # TODO: need counties table in here...
+def get_counties_list():
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute("SELECT name FROM counties")
+    rows = cursor.fetchall()
+    counties = [row['name'] for row in rows]
+    complete(cursor)
+    return Response(json.dumps(counties), status=200, mimetype='application/json')
 
 
 @app.route('/complex_names/<name>', methods=['GET'])
 def get_complex_names(name):
     uri = app.config['LEGACY_ADAPTER_URI'] + 'complex_names/' + name
     response = requests.get(uri)
-    return Response(response.data.decode(), status=response.status_code, mimetype='application/json')
+    return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
 @app.route('/complex_names/search', methods=['POST'])
@@ -135,12 +159,12 @@ def get_complex_names_post():
     data = request.get_json(force=True)
     uri = app.config['LEGACY_ADAPTER_URI'] + 'complex_names/search'
     response = requests.post(uri, data=data, headers={'Content-Type': 'application/json'})
-    return Response(response.data.decode(), status=response.status_code, mimetype='application/json')
+    return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
 # ========= Dev Routes ==============
 @app.route('/applications', methods=['DELETE'])
-def clear_applications():
+def clear_applications():  # pragma: no cover
     if not app.config['ALLOW_DEV_ROUTES']:
         return Response(status=403)
 
@@ -151,7 +175,7 @@ def clear_applications():
 
 
 @app.route('/applications', methods=['PUT'])
-def bulk_add_applications():
+def bulk_add_applications():  # pragma: no cover
     if not app.config['ALLOW_DEV_ROUTES']:
         return Response(status=403)
 
@@ -160,6 +184,40 @@ def bulk_add_applications():
     ids = bulk_insert_applications(cursor, data)
     complete(cursor)
     return Response(json.dumps({'ids': ids}), status=200, mimetype='application/json')
+
+
+@app.route('/counties', methods=['POST'])
+def load_counties():  # pragma: no cover
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+
+    if request.headers['Content-Type'] != "application/json":
+        logging.error('Content-Type is not JSON')
+        return Response(status=415)
+
+    json_data = request.get_json(force=True)
+    cursor = connect()
+    for item in json_data:
+        if 'cym' not in item:
+            item['cym'] = None
+
+        cursor.execute('INSERT INTO COUNTIES (name, welsh_name) VALUES (%(e)s, %(c)s)',
+                       {
+                           'e': item['eng'], 'c': item['cym']
+                       })
+    complete(cursor)
+    return Response(status=200)
+
+
+@app.route('/counties', methods=['DELETE'])
+def delete_counties():  # pragma: no cover
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+
+    cursor = connect()
+    cursor.execute('DELETE FROM COUNTIES')
+    complete(cursor)
+    return Response(status=200)
 
 
 def connect(cursor_factory=None):
