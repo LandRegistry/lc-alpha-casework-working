@@ -80,3 +80,26 @@ def update_application_details(cursor, appn_id, data):
                        "assign": data['assigned_to'],
                        "id": appn_id
                    })
+
+
+def complete_application(cursor, data):
+    # Submit registration
+    # Archive document
+    # Delete work-item
+    pass
+
+
+def bulk_insert_applications(cursor, data):
+    items = []
+    for item in data:
+        app_data = {
+            "document_id": item['document_id']
+        }
+        cursor.execute("INSERT INTO pending_application (application_data, date_received, "
+                       "application_type, status, work_type) " +
+                       "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s) "
+                       "RETURNING id", {"json": json.dumps(app_data), "date": item['date'],
+                                        "type": item['application_type'],
+                                        "status": "new", "work_type": item['work_type']})
+        items.append(cursor.fetchone()[0])
+    return items
