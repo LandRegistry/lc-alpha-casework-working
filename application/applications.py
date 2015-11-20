@@ -50,17 +50,18 @@ def get_application_list(cursor, list_type):
     return applications
 
 
-def get_application_by_id(cursor, id):
+def get_application_by_id(cursor, appn_id):
     cursor.execute("SELECT date_received, application_data, application_type, status, work_type, assigned_to "
                    "FROM pending_application "
-                   "WHERE id=%(id)s", {"id": id})
+                   "WHERE id=%(id)s", {"id": appn_id})
     rows = cursor.fetchall()
 
     if len(rows) == 0:
         return None
     row = rows[0]
+    print(row)
     return {
-        "appn_id": row['id'],
+        "appn_id": appn_id,
         "application_data": row['application_data'],
         "date_received": str(row['date_received']),
         "application_type": row['application_type'],

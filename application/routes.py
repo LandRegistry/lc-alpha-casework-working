@@ -1,5 +1,6 @@
 from application import app
 from flask import Response, request
+from flask.ext.cors import cross_origin
 import json
 import logging
 import psycopg2
@@ -131,6 +132,7 @@ def update_application(appn_id):
 
 # =========== OTHER ROUTES ==============
 @app.route('/keyholders/<key_number>', methods=['GET'])
+@cross_origin()
 def get_keyholder(key_number):
     uri = app.config['LEGACY_ADAPTER_URI'] + '/keyholders/' + key_number
     response = requests.get(uri)
