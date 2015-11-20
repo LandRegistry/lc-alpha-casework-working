@@ -140,6 +140,7 @@ def get_keyholder(key_number):
 
 
 @app.route('/counties', methods=['GET'])
+@cross_origin()
 def get_counties_list():
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute("SELECT name FROM counties")
