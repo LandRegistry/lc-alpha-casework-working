@@ -7,7 +7,8 @@ import psycopg2
 import psycopg2.extras
 import requests
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
-    update_application_details, bulk_insert_applications, complete_application, delete_application
+    update_application_details, bulk_insert_applications, complete_application, delete_application, \
+    amend_application
 
 valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
 
@@ -135,6 +136,8 @@ def update_application(appn_id):
         appn = get_application_by_id(cursor, appn_id)
     elif action == 'complete':
         appn = complete_application(cursor, appn_id, data)
+    elif action == 'amend':
+        appn = amend_application(cursor, appn_id, data)
     else:
         return Response("Invalid action", status=400)
 

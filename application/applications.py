@@ -89,6 +89,31 @@ def delete_application(cursor, appn_id):
     return cursor.rowcount
 
 
+def amend_application(cursor, appn_id, data):
+    reg_no = data['regn_no']
+    url = app.config['LAND_CHARGES_URI'] + '/registrations/' + reg_no
+    headers = {'Content-Type': 'application/json'}
+    response = requests.put(url, data=json.dumps(data), headers=headers)
+    if response.status_code != 200:
+        return response
+
+    # Archive amendment docs under new ID
+    regns = response.json()
+    date_string = datetime.now().strftime("%Y_%m_%d")
+    for reg_no in regns['new_registrations']:
+        url = app.config['DOCUMENT_API_URI'] + '/archive/' + date_string + '/' + str(reg_no)
+        body = {'document_id': data['document_id']}
+        doc_response = requests.post(url, data=json.dumps(body), headers=headers)
+        if doc_response.status_code != 200:
+            return doc_response
+
+    # Delete work-item
+    delete_application(cursor, appn_id)
+
+    # return regn nos
+    return regns
+
+
 def complete_application(cursor, appn_id, data):
     # Submit registration
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
@@ -99,8 +124,8 @@ def complete_application(cursor, appn_id, data):
 
     # Archive document
     regns = response.json()
-    date_string = datetime.now().strftime("%d_%m_%%Y")
-    for reg_no in regns:
+    date_string = datetime.now().strftime("%Y_%m_%d")
+    for reg_no in regns['new_registrations']:
         url = app.config['DOCUMENT_API_URI'] + '/archive/' + date_string + '/' + str(reg_no)
         body = {'document_id': data['document_id']}
         doc_response = requests.post(url, data=json.dumps(body), headers=headers)
