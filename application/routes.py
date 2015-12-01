@@ -76,22 +76,23 @@ def create_application():
     if request.headers['Content-Type'] != "application/json":
         return Response(status=415)
 
-    action = 'store'
-    if 'action' in request.args:
-        action = request.args['action']
+    # action = 'store'
+    # if 'action' in request.args:
+    #     action = request.args['action']
 
     data = request.get_json(force=True)
     print(data)
     if 'application_type' not in data or 'date_received' not in data or "work_type" not in data or 'application_data' not in data:
         return Response(status=400)
-
     cursor = connect()
-    if action == 'store':
-        item_id = insert_new_application(cursor, data)
-    elif action == 'complete':
-        complete_application(cursor, data)
-    else:
-        return Response("Invalid action", status=400)
+    item_id = insert_new_application(cursor, data)
+
+    # if action == 'store':
+    #     item_id = insert_new_application(cursor, data)
+    # elif action == 'complete':
+    #     complete_application(cursor, data)
+    # else:
+    #     return Response("Invalid action", status=400)
 
     complete(cursor)
     return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
@@ -122,10 +123,21 @@ def remove_application(appn_id):
 @app.route('/applications/<appn_id>', methods=['PUT'])
 def update_application(appn_id):
     # TODO: validate
+    action = 'store'
+    if 'action' in request.args:
+        action = request.args['action']
+
     data = request.get_json(force=True)
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    update_application_details(cursor, appn_id, data)
-    appn = get_application_by_id(cursor, appn_id)
+
+    if action == 'store':
+        update_application_details(cursor, appn_id, data)
+        appn = get_application_by_id(cursor, appn_id)
+    elif action == 'complete':
+        appn = complete_application(cursor, appn_id, data)
+    else:
+        return Response("Invalid action", status=400)
+
     complete(cursor)
     return Response(json.dumps(appn), status=200)
 

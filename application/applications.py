@@ -1,4 +1,7 @@
 import json
+from application import app
+import requests
+from datetime import datetime
 
 
 def insert_new_application(cursor, data):
@@ -86,11 +89,29 @@ def delete_application(cursor, appn_id):
     return cursor.rowcount
 
 
-def complete_application(cursor, data):
+def complete_application(cursor, appn_id, data):
     # Submit registration
+    url = app.config['LAND_CHARGES_URI'] + '/registrations'
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+    if response.status_code != 200:
+        return response
+
     # Archive document
+    regns = response.json()
+    date_string = datetime.now().strftime("%d_%m_%%Y")
+    for reg_no in regns:
+        url = app.config['DOCUMENT_API_URI'] + '/archive/' + date_string + '/' + str(reg_no)
+        body = {'document_id': data['document_id']}
+        doc_response = requests.post(url, data=json.dumps(body), headers=headers)
+        if doc_response.status_code != 200:
+            return doc_response
+
     # Delete work-item
-    pass
+    delete_application(cursor, appn_id)
+
+    # return regn nos
+    return regns
 
 
 def bulk_insert_applications(cursor, data):  # pragma: no cover
