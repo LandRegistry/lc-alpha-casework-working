@@ -26,4 +26,4 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table('errors^')
+    op.drop_table('errors')

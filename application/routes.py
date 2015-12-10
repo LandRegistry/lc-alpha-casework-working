@@ -9,6 +9,7 @@ import requests
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
     amend_application
+from application.results import read_result, update_result_data, read_result_by_id
 
 valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
 
@@ -180,6 +181,34 @@ def get_complex_names_post():
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
+# ========= Results =================
+@app.route('/results', methods=['GET'])
+def get_results():
+    state = None
+    if 'state' in request.args:
+        state = request.args['state']
+        
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    returns = read_result(cursor, state)
+    complete(cursor)
+
+    return Response(json.dumps(returns), status=200, mimetype='application/json')
+    
+#read_result, update_result
+@app.route('/results/<int:id>', methods=['PUT'])
+def update_result(id):
+    data = request.get_json(force=True)
+    if not 'state' in data:
+        return Response("No state provided", status=400)
+
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    update_result_data(cursor, id, data['state'])
+    result = read_result_by_id(cursor, id)
+    complete(cursor)    
+    
+    return Response(json.dumps(result), status=200, mimetype='application/json')
+    
+    
 # ========= Dev Routes ==============
 @app.route('/applications', methods=['DELETE'])
 def clear_applications():  # pragma: no cover
