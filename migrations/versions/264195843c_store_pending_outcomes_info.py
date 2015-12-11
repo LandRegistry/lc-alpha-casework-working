@@ -31,4 +31,4 @@ def downgrade():
     
 # insert into results (type, state, number) values ('search', 'new', 7);
 # insert into results (type, state, number) values ('search', 'new', 3);
-# insert into results (type, state, number, date) values ('search', 'new', 1015, '2014-08-16');
+# insert into results (type, state, number, date) values ('registration', 'new', 1015, '2014-08-16');

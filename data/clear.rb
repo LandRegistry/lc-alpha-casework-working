@@ -6,3 +6,4 @@ http = Net::HTTP.new(uri.host, uri.port)
 
 response = http.request(Net::HTTP::Delete.new('/applications'))
 response = http.request(Net::HTTP::Delete.new('/counties'))
+response = http.request(Net::HTTP::Delete.new('/results'))

@@ -210,6 +210,37 @@ def update_result(id):
     
     
 # ========= Dev Routes ==============
+@app.route('/results', methods=['DELETE'])
+def clear_results():
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+
+    cursor = connect()
+    cursor.execute("DELETE FROM results")
+    complete(cursor)
+    return Response(status=200)
+    
+    
+@app.route('/results', methods=['POST'])
+def add_result():
+
+    item = request.get_json(force=True)
+    cursor = connect()
+    
+    
+    date = None
+    if 'date' in item:
+        date = item['date']
+    cursor.execute('INSERT INTO results (type, state, number, date) VALUES '
+                   '( %(type)s, %(state)s, %(number)s, %(date)s )', {
+                       'type': item['type'], 'state': item['state'],
+                       'number': item['number'], 'date': date
+                   })
+
+    complete(cursor)
+    return Response(status=200)
+
+
 @app.route('/applications', methods=['DELETE'])
 def clear_applications():  # pragma: no cover
     if not app.config['ALLOW_DEV_ROUTES']:
