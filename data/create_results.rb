@@ -15,8 +15,18 @@ http = Net::HTTP.new(uri.host, uri.port)
 
 data.each do |item|
     id = item['id']
+    type = 'search nr'
+    
+    item['result'].each do |result|
+        result.each do |key, value|
+            if value.length > 0
+                type = 'search'
+            end
+        end
+    end    
+    
     result = {
-        "type" => "search",
+        "type" => type,
         "state" => "new",
         "number" => id,
     }
