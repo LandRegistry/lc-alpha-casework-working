@@ -62,7 +62,6 @@ def get_application_by_id(cursor, appn_id):
     if len(rows) == 0:
         return None
     row = rows[0]
-    print(row)
     return {
         "appn_id": appn_id,
         "application_data": row['application_data'],
@@ -91,7 +90,8 @@ def delete_application(cursor, appn_id):
 
 def amend_application(cursor, appn_id, data):
     reg_no = data['regn_no']
-    url = app.config['LAND_CHARGES_URI'] + '/registrations/' + reg_no
+    date = data['registration']['date']
+    url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
     headers = {'Content-Type': 'application/json'}
     response = requests.put(url, data=json.dumps(data), headers=headers)
     if response.status_code != 200:

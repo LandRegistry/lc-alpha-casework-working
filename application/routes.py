@@ -82,7 +82,6 @@ def create_application():
     #     action = request.args['action']
 
     data = request.get_json(force=True)
-    print(data)
     if 'application_type' not in data or 'date_received' not in data or "work_type" not in data or 'application_data' not in data:
         return Response(status=400)
     cursor = connect()
