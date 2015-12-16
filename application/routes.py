@@ -1,5 +1,5 @@
 from application import app
-from flask import Response, request
+from flask import Response, request, send_from_directory, send_file,  url_for
 from flask.ext.cors import cross_origin
 import json
 import logging
@@ -9,6 +9,8 @@ import requests
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
     amend_application
+import io
+from application.ocr import recognise
 
 valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
 
@@ -83,7 +85,8 @@ def create_application():
 
     data = request.get_json(force=True)
     print(data)
-    if 'application_type' not in data or 'date_received' not in data or "work_type" not in data or 'application_data' not in data:
+    if 'application_type' not in data or 'date_received' not in data \
+            or "work_type" not in data or 'application_data' not in data:
         return Response(status=400)
     cursor = connect()
     item_id = insert_new_application(cursor, data)
@@ -144,6 +147,177 @@ def update_application(appn_id):
     complete(cursor)
     return Response(json.dumps(appn), status=200)
 
+# ============ FORMS ==============
+
+
+@app.route('/forms/<size>', methods=["POST"])
+def create_documents(size):
+    # create document, add first page image and return document id
+    content_type = request.headers['Content-Type']
+    if content_type != "image/tiff" and content_type != 'image/jpeg' and content_type != 'application/pdf':
+        logging.error('Content-Type is not a valid image format')
+        return Response(status=415)
+
+    # ocr form to detect application type
+    bytes = io.BytesIO(request.data)
+    form_type = recognise(bytes)
+
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+
+    cursor.execute('select max(document_id)+1 from documents')
+
+    next_doc_id = cursor.fetchone()
+
+    if next_doc_id[0] is None:
+        next_doc_id[0] = 1
+
+    cursor.execute("insert into documents (document_id, form_type, content_type, page, size, image) "
+                   "values ( %(document_id)s, %(form_type)s, %(content_type)s, %(page)s, %(size)s, "
+                   "%(image)s ) returning document_id",
+                   {
+                       "document_id": next_doc_id[0],
+                       "form_type": form_type,
+                       "content_type": content_type,
+                       "page": "1",
+                       "size": size,
+                       "image": psycopg2.Binary(request.data)
+                   })
+    res = cursor.fetchone()
+
+    document_id = res[0]
+    complete(cursor)
+
+    return Response(json.dumps({"id": document_id, "form_type": form_type}), status=201, mimetype='application/json')
+
+
+@app.route('/forms/<int:doc_id>/<size>', methods=['POST'])
+def append_image(doc_id, size):
+    # append new page image to the document
+    content_type = request.headers['Content-Type']
+    if content_type != "image/tiff" and content_type != 'image/jpeg' and content_type != 'application/pdf':
+        logging.error('Content-Type is not a valid image format')
+        return Response(status=415)
+
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+
+    cursor.execute('select max(page)+1 from documents where document_id=%(doc_id)s', {"doc_id": doc_id})
+
+    next_page_no = cursor.fetchone()
+    if next_page_no[0] is None:
+        return Response(status=404)
+
+    cursor.execute("insert into documents (document_id, content_type, page, size, image) "
+                   "values ( %(document_id)s, %(content_type)s, %(page)s, %(size)s, %(image)s )",
+                   {
+                       "document_id": doc_id,
+                       "content_type": content_type,
+                       "page": next_page_no[0],
+                       "size": size,
+                       "image": psycopg2.Binary(request.data)
+                   })
+    rowcount = cursor.rowcount
+    complete(cursor)
+
+    if rowcount == 0:
+        return Response(status=404)
+
+    return Response(status=201)
+
+
+@app.route('/forms/<int:doc_id>/<int:page_no>/<size>', methods=["PUT"])
+def change_image(doc_id, page_no, size):
+    # replace an existing page image
+    content_type = request.headers['Content-Type']
+    if content_type != "image/tiff" and content_type != 'image/jpeg' and content_type != 'application/pdf':
+        logging.error('Content-Type is not a valid image format')
+        return Response(status=415)
+
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+
+    if page_no == 1:
+        # ocr form to detect application type
+        bytes = io.BytesIO(request.data)
+        form_type = recognise(bytes)
+        # TODO: if form_type is different to the original type, need to consider updating any page 2,3 etc...
+    else:
+        cursor.execute('select form_type from documents where document_id=%(doc_id)s and page = 1', {"doc_id": doc_id})
+
+        row = cursor.fetchone()
+        if row is None:
+            return Response(status=404)
+        form_type = row['form_type']
+
+    cursor.execute("update documents set form_type=%(form_type)s, content_type=%(content_type)s, "
+                   "size=%(size)s , image=%(image)s where document_id=%(doc_id)s and page=%(page)s",
+                   {
+                       "doc_id": doc_id,
+                       "form_type": form_type,
+                       "content_type": content_type,
+                       "page": page_no,
+                       "size": size,
+                       "image": psycopg2.Binary(request.data)
+                   })
+    rowcount = cursor.rowcount
+    complete(cursor)
+
+    if rowcount == 0:
+        return Response(status=404)
+
+    return Response(status=200)
+
+
+@app.route('/forms/<int:doc_id>/<int:page_no>', methods=["DELETE"])
+def delete_image(doc_id, page_no):
+    cursor = connect()
+    cursor.execute("delete from documents where document_id=%(doc_id)s and page=%(page)s",
+                   {"doc_id": doc_id, "page": page_no})
+
+    rowcount = cursor.rowcount
+    complete(cursor)
+
+    if rowcount == 0:
+        return Response(status=404)
+    return Response(status=200)
+
+
+@app.route('/forms/<int:doc_id>', methods=["GET"])
+def get_document_info(doc_id):
+    # retrieve page info for a document
+
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute("select page from documents where document_id = %(id)s", {"id": doc_id})
+    rows = cursor.fetchall()
+    complete(cursor)
+
+    data = []
+    if len(rows) == 0:
+        data = None
+    else:
+        for row in rows:
+            data.append(row['page'])
+
+    return Response(json.dumps({"images": data}), status=200, mimetype='application/json')
+
+
+@app.route('/forms/<int:doc_id>/<int:page_no>', methods=["GET"])
+def get_image(doc_id, page_no):
+    # retrieve byte[] for a page
+
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+
+    cursor.execute("select content_type, (image) from documents where document_id=%(doc_id)s and page=%(page)s",
+                   {"doc_id": doc_id, "page": page_no})
+
+    rows = cursor.fetchall()
+    complete(cursor)
+
+    if len(rows) == 0:
+        return Response(status=404)
+
+    row = rows[0]
+
+    return Response(row['image'], status=200, mimetype=row['content_type'])
+
 
 # =========== OTHER ROUTES ==============
 @app.route('/keyholders/<key_number>', methods=['GET'])
@@ -181,6 +355,38 @@ def get_complex_names_post():
 
 
 # ========= Dev Routes ==============
+
+@app.route('/forms', methods=['DELETE'])
+def delete():
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+    cursor = connect()
+    cursor.execute("DELETE FROM documents")
+    complete(cursor)
+    return Response(status=200, mimetype='application/json')
+
+
+@app.route('/forms/bulk', methods=['POST'])
+def bulk_load():
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+
+    data = request.get_json(force=True)
+    cursor = connect()
+    for item in data:
+        cursor.execute("INSERT INTO documents (id, metadata, image_paths) "
+                       "VALUES ( %(id)s, %(meta)s, %(image)s )",
+                       {
+                           'id': item['id'],
+                           'meta': json.dumps(item['metadata']),
+                           'image': json.dumps(item['image_paths'])
+                       })
+    cursor.execute("SELECT setval('documents_id_seq', (SELECT MAX(id) FROM documents)+1);")
+
+    complete(cursor)
+    return Response(status=200, mimetype='application/json')
+
+
 @app.route('/applications', methods=['DELETE'])
 def clear_applications():  # pragma: no cover
     if not app.config['ALLOW_DEV_ROUTES']:
@@ -249,260 +455,3 @@ def complete(cursor):
     cursor.connection.commit()
     cursor.close()
     cursor.connection.close()
-
-
-# ========= OLD ROUTES ============
-# @app.route('/workitem', methods=["POST"])
-# def manual():
-#     if request.headers['Content-Type'] != "application/json":
-#         return Response(status=415)
-#
-#     data = request.get_json(force=True)
-#     if 'application_type' not in data \
-#             or 'date' not in data \
-#             or "work_type" not in data \
-#             or 'document_id' not in data:
-#         return Response(status=400)
-#
-#     app_data = {
-#         "document_id": data['document_id']
-#     }
-#
-#     cursor = connect()
-#     cursor.execute("INSERT INTO pending_application (application_data, date_received, "
-#                    "application_type, status, work_type) " +
-#                    "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s) "
-#                    "RETURNING id", {"json": json.dumps(app_data), "date": data['date'],
-#                                     "type": data['application_type'],
-#                                     "status": "new", "work_type": data['work_type']})
-#     item_id = cursor.fetchone()[0]
-#     complete(cursor)
-#     return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
-#
-#
-# @app.route('/workitems', methods=['DELETE'])
-# def delete_workitems():
-#     cursor = connect()
-#     cursor.execute("DELETE FROM pending_application")
-#     complete(cursor)
-#     return Response(status=200)
-#
-#
-# @app.route('/workitem/bulk', methods=["POST"])
-# def bulk_load():
-#     data = request.get_json(force=True)
-#     for item in data:
-#         if 'application_type' not in item or 'date' not in item or "work_type" not in item or 'document_id' not in item:
-#             return Response(status=400)
-#
-#     items = []
-#     cursor = connect()
-#     for item in data:
-#         app_data = {
-#             "document_id": item['document_id']
-#         }
-#         cursor.execute("INSERT INTO pending_application (application_data, date_received, "
-#                        "application_type, status, work_type) " +
-#                        "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s) "
-#                        "RETURNING id", {"json": json.dumps(app_data), "date": item['date'],
-#                                         "type": item['application_type'],
-#                                         "status": "new", "work_type": item['work_type']})
-#         items.append(cursor.fetchone()[0])
-#     complete(cursor)
-#     return Response(json.dumps({'ids': items}), status=200, mimetype='application/json')
-#
-#
-# @app.route('/workitem/<int:item_id>', methods=["DELETE"])
-# def delete_item(item_id):
-#     cursor = connect()
-#     cursor.execute("DELETE FROM pending_application WHERE id=%(id)s",
-#                    {"id": item_id})
-#     rows = cursor.rowcount
-#     complete(cursor)
-#     if rows == 0:
-#         return Response(status=404)
-#     else:
-#         return Response(status=204)
-#
-#
-# @app.route('/lodge_manual', methods=['POST'])
-# def lodge_manual():
-#     if request.headers['Content-Type'] != "application/json":
-#         return Response(status=415)
-#
-#     data = request.get_json(force=True)
-#
-#     print(json.dumps(data))
-#     if 'application_type' not in data or 'date' not in data or 'debtor_name' not in data:
-#         return Response(status=400)
-#
-#     forenames = data['debtor_name']['forenames']
-#     name_str = ''
-#     for item in forenames:
-#         name_str += '%s ' % item.strip()
-#
-#     name_str.strip()
-#
-#     status = "new"
-#     assigned = ""
-#     work_type = "bank_regn"
-#
-#     try:
-#         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
-#             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
-#             app.config['DATABASE_PASSWORD']))
-#
-#     except psycopg2.OperationalError as exception:
-#         return Response("Failed to connect to database: {}".format(exception), status=500)
-#
-#     try:
-#         cursor = connection.cursor()
-#         cursor.execute("INSERT INTO pending_application (application_data, date_received, "
-#                        "application_type, forenames, surname, status, assigned_to, work_type) " +
-#                        "VALUES (%(json)s, %(date)s, %(type)s, %(forenames)s, %(surname)s, "
-#                        "%(status)s, %(assigned)s, %(work_type)s) "
-#                        "RETURNING id", {"json": json.dumps(data), "date": data['date'],
-#                                         "type": data['application_type'], "forenames": name_str,
-#                                         "surname": data['debtor_name']['surname'],
-#                                         "status": status, "assigned": assigned, "work_type": work_type})
-#         appn_id = cursor.fetchone()[0]
-#     except psycopg2.OperationalError as exception:
-#         return Response("Failed to insert to database: {}".format(exception), status=500)
-#
-#     connection.commit()
-#     cursor.close()
-#     connection.close()
-#     return Response(json.dumps({'id': appn_id}), status=200, mimetype='application/json')
-#
-#
-# @app.route('/search/<int:appn_id>', methods=["GET"])
-# def get(appn_id):
-#     try:
-#         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
-#             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
-#             app.config['DATABASE_PASSWORD']))
-#     except psycopg2.OperationalError as exception:
-#         print(exception)
-#         return Response("Failed to connect to database", status=500)
-#
-#     try:
-#         cursor = connection.cursor()
-#         cursor.execute("SELECT application_data FROM pending_application WHERE id=%(id)s", {"id": appn_id})
-#     except psycopg2.OperationalError as exception:
-#         print(exception)
-#         return Response("Failed to select from database", status=500)
-#
-#     rows = cursor.fetchall()
-#     if len(rows) == 0:
-#         return Response(status=404)
-#
-#     data = json.dumps(rows[0][0], ensure_ascii=False)
-#
-#     cursor.close()
-#     connection.close()
-#
-#     return Response(data, status=200, mimetype='application/json')
-#
-#
-# @app.route('/search_by_name', methods=["POST"])
-# def get_by_name():
-#     try:
-#         data = (request.get_json(force=True))
-#         forenames = data['forenames']
-#         surname = data['surname']
-#
-#         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
-#             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
-#             app.config['DATABASE_PASSWORD']))
-#     except psycopg2.OperationalError as exception:
-#         print(exception)
-#         return Response("Failed to connect to database", status=500)
-#
-#     try:
-#         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-#         cursor.execute("SELECT application_data FROM pending_application "
-#                        "WHERE trim(both ' ' from UPPER(forenames))=%(forenames)s AND UPPER(surname)=%(surname)s",
-#                        {"forenames": forenames.upper(), "surname": surname.upper()})
-#
-#     except psycopg2.OperationalError as exception:
-#         print(exception)
-#         return Response("Failed to select from database", status=500)
-#
-#     rows = cursor.fetchall()
-#
-#     if len(rows) == 0:
-#         return Response(status=404)
-#     applications = []
-#     for row in rows:
-#         applications.append(row['application_data'])
-#
-#     data = json.dumps(applications, ensure_ascii=False)
-#
-#     cursor.close()
-#     connection.close()
-#
-#     return Response(data, status=200, mimetype='application/json')
-#
-#
-
-#
-#
-# @app.route('/work_list/<list_type>', methods=["GET"])
-# def get_work_list(list_type):
-#
-#     if list_type not in valid_types:
-#         return Response("Error: '" + list_type + "' is not one of the accepted work list types", status=400)
-#
-#     bank_regn_type = ''
-#     if list_type == 'pab':
-#         bank_regn_type = 'PA(B)'
-#     elif list_type == 'wob':
-#         bank_regn_type = 'WO(B)'
-#
-#     try:
-#         connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
-#             app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
-#             app.config['DATABASE_PASSWORD']))
-#     except psycopg2.OperationalError as exception:
-#         logging.error(exception)
-#         return Response("Failed to connect to database", status=500)
-#
-#     try:
-#         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-#         if list_type == 'all':
-#             cursor.execute("SELECT id, date_received, application_type, status, work_type, assigned_to "
-#                            "FROM pending_application order by date_received desc")
-#         elif bank_regn_type != '':
-#             cursor.execute("SELECT id, date_received, application_type, status, work_type, assigned_to "
-#                            "FROM pending_application "
-#                            "WHERE application_type=%(bank_regn_type)s order by date_received desc",
-#                            {"bank_regn_type": bank_regn_type})
-#         else:
-#             cursor.execute("SELECT id, date_received, application_type, status, work_type, assigned_to "
-#                            "FROM pending_application "
-#                            "WHERE work_type=%(list_type)s order by date_received", {"list_type": list_type})
-#
-#     except psycopg2.OperationalError as exception:
-#         logging.error(exception)
-#         return Response("Failed to select from database", status=500)
-#
-#     rows = cursor.fetchall()
-#     applications = []
-#
-#     for row in rows:
-#         result = {
-#             "appn_id": row['id'],
-#             "date_received": str(row['date_received']),
-#             "application_type": row['application_type'],
-#             "status": row['status'],
-#             "work_type": row['work_type'],
-#             "assigned_to": row['assigned_to'],
-#         }
-#         applications.append(result)
-#
-#     data = json.dumps(applications, ensure_ascii=False)
-#
-#     cursor.close()
-#     connection.close()
-#
-#     return Response(data, status=200, mimetype='application/json')
