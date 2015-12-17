@@ -159,8 +159,8 @@ def create_documents(size):
         return Response(status=415)
 
     # ocr form to detect application type
-    bytes = io.BytesIO(request.data)
-    form_type = recognise(bytes)
+    image_as_bytes = io.BytesIO(request.data)
+    form_type = recognise(image_as_bytes)
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
 
