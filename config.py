@@ -15,6 +15,7 @@ class DevelopmentConfig(Config):
     LAND_CHARGES_URI = 'http://localhost:5004'
     DOCUMENT_API_URI = 'http://localhost:5014'
     LEGACY_ADAPTER_URI = 'http://localhost:5007'
+    IMAGE_DIRECTORY = '/home/vagrant/interim/'
     ALLOW_DEV_ROUTES = True
 
 
@@ -27,4 +28,5 @@ class PreviewConfig(Config):
     LAND_CHARGES_URI = 'http://localhost:5004'
     LEGACY_ADAPTER_URI = 'http://localhost:5007'
     DOCUMENT_API_URI = 'http://localhost:5014'
+    IMAGE_DIRECTORY = "~/interim/"
     ALLOW_DEV_ROUTES = True
