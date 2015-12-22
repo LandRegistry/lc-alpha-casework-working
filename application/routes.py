@@ -11,6 +11,7 @@ from application.applications import insert_new_application, get_application_lis
     amend_application
 import io
 from application.ocr import recognise
+import base64
 
 valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
 
