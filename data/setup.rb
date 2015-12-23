@@ -22,12 +22,12 @@ stock_data = '[' +
     '{"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 37},' +
     '{"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 39},' +
     '{"date": "2015-11-05 13:45:54", "work_type": "cancel", "application_type": "WO(B)", "document_id": 41},' +
-    '{"date": "2015-11-05 13:45:54", "work_type": "amend", "application_type": "WO(B)", "document_id": 44},' +
-    '{"date": "2015-11-05 13:45:54", "work_type": "amend", "application_type": "WO(B)", "document_id": 47},' +
-    '{"date": "2015-11-05 13:45:55", "work_type": "amend", "application_type": "WO(B)", "document_id": 50},' +
-    '{"date": "2015-11-05 13:45:55", "work_type": "amend", "application_type": "WO(B)", "document_id": 53},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "amend", "application_type": "WO(B)", "document_id": 56},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "amend", "application_type": "WO(B)", "document_id": 59},' +
+    '{"date": "2015-11-05 13:45:54", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 44},' +
+    '{"date": "2015-11-05 13:45:54", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 47},' +
+    '{"date": "2015-11-05 13:45:55", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 50},' +
+    '{"date": "2015-11-05 13:45:55", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 53},' +
+    '{"date": "2015-11-05 13:45:56", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 56},' +
+    '{"date": "2015-11-05 13:45:56", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 59},' +
     '{"date": "2015-11-05 13:45:56", "work_type": "search", "application_type": "Full Search", "document_id": 60},' +
     '{"date": "2015-11-05 13:45:56", "work_type": "search", "application_type": "Full Search", "document_id": 61},' +
     '{"date": "2015-11-05 13:45:56", "work_type": "search", "application_type": "Search", "document_id": 62},' +

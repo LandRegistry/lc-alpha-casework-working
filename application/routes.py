@@ -13,7 +13,9 @@ import io
 from application.ocr import recognise
 import base64
 
-valid_types = ['all', 'pab', 'wob', 'bank_regn', 'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
+valid_types = ['all', 'pab', 'wob',
+               'bank', 'bank_regn', 'bank_amend', 'bank_rect', 'bank_with', 'bank_stored',
+               'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
 
 
 @app.route('/', methods=["GET"])
