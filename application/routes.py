@@ -161,9 +161,13 @@ def create_documents(size):
         logging.error('Content-Type is not a valid image format')
         return Response(status=415)
 
-    # ocr form to detect application type
-    image_as_bytes = io.BytesIO(request.data)
-    form_type = recognise(image_as_bytes)
+    if 'type' in request.args:
+        logging.info("Form type specified")
+        form_type = request.args['type']
+    else:
+        # ocr form to detect application type
+        image_as_bytes = io.BytesIO(request.data)
+        form_type = recognise(image_as_bytes)
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -318,6 +322,9 @@ def get_image(doc_id, page_no):
         return Response(status=404)
 
     row = rows[0]
+
+    data = row['image']
+    print(type(data))
 
     return Response(row['image'], status=200, mimetype=row['content_type'])
 
