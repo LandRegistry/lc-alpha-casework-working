@@ -8,32 +8,47 @@ http = Net::HTTP.new(uri.host, uri.port)
 
 stock_data = '[' +
     '{"date": "2015-11-05 13:45:49", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 12},' +
-    '{"date": "2015-11-05 13:45:49", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 13},' +
-    '{"date": "2015-11-05 13:45:49", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 14},' +
-    '{"date": "2015-11-05 13:45:50", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 15},' +
-    '{"date": "2015-11-05 13:45:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 26},' +
-    '{"date": "2015-11-05 13:45:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 27},' +
-    '{"date": "2015-11-05 13:45:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 28},' +
-    '{"date": "2015-11-05 13:45:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 29},' +
-    '{"date": "2015-11-05 13:45:53", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 66},' +
-    '{"date": "2015-11-05 13:45:52", "work_type": "cancel", "application_type": "WO(B)", "document_id": 31},' +
+    '{"date": "2015-11-05 13:41:49", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 13},' +
+    '{"date": "2015-11-05 13:42:49", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 14},' +
+    '{"date": "2015-11-05 13:43:50", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 15},' +
+    '{"date": "2015-11-05 13:46:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 26},' +
+    '{"date": "2015-11-05 13:44:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 27},' +
+    '{"date": "2015-11-05 13:47:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 28},' +
+    '{"date": "2015-11-05 13:48:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 29},' +
+    '{"date": "2015-11-05 13:49:53", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 66},' +
+    '{"date": "2015-11-05 13:41:52", "work_type": "cancel", "application_type": "WO(B)", "document_id": 31},' +
     '{"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 33},' +
-    '{"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 35},' +
-    '{"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 37},' +
-    '{"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 39},' +
-    '{"date": "2015-11-05 13:45:54", "work_type": "cancel", "application_type": "WO(B)", "document_id": 41},' +
-    '{"date": "2015-11-05 13:45:54", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 44},' +
-    '{"date": "2015-11-05 13:45:54", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 47},' +
-    '{"date": "2015-11-05 13:45:55", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 50},' +
-    '{"date": "2015-11-05 13:45:55", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 53},' +
+    '{"date": "2015-11-05 13:42:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 35},' +
+    '{"date": "2015-11-05 13:43:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 37},' +
+    '{"date": "2015-11-05 13:44:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 39},' +
+    '{"date": "2015-11-05 13:46:54", "work_type": "cancel", "application_type": "WO(B)", "document_id": 41},' +
+    '{"date": "2015-11-05 13:41:54", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 44},' +
+    '{"date": "2015-11-05 13:43:54", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 47},' +
+    '{"date": "2015-11-05 13:42:55", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 50},' +
+    '{"date": "2015-11-05 13:47:55", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 53},' +
     '{"date": "2015-11-05 13:45:56", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 56},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 59},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "search", "application_type": "Full Search", "document_id": 60},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "search", "application_type": "Full Search", "document_id": 61},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "search", "application_type": "Search", "document_id": 62},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "search", "application_type": "Search", "document_id": 63},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "search", "application_type": "Full Search", "document_id": 64},' +
-    '{"date": "2015-11-05 13:45:57", "work_type": "search", "application_type": "Search", "document_id": 65}' +
+    '{"date": "2015-11-05 13:48:56", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 59},' +
+    '{"date": "2015-11-05 13:41:56", "work_type": "full_search", "application_type": "Full Search", "document_id": 60},' +
+    '{"date": "2015-11-05 13:45:56", "work_type": "full_search", "application_type": "Full Search", "document_id": 61},' +
+    '{"date": "2015-11-05 13:42:56", "work_type": "bank_search", "application_type": "Bank Search", "document_id": 62},' +
+    '{"date": "2015-11-05 13:43:56", "work_type": "bank_search", "application_type": "Bank Search", "document_id": 63},' +
+    '{"date": "2015-11-05 13:44:56", "work_type": "full_search", "application_type": "Full Search", "document_id": 64},' +
+    '{"date": "2015-11-05 13:48:57", "work_type": "bank_search", "application_type": "Bank Search", "document_id": 65},' +
+    '{"date": "2015-11-05 14:01:57", "work_type": "lc_regn", "application_type": "C4", "document_id": 65},' +
+    '{"date": "2015-11-05 14:04:57", "work_type": "lc_regn", "application_type": "C1", "document_id": 65},' +
+    '{"date": "2015-11-05 14:03:57", "work_type": "lc_regn", "application_type": "D2", "document_id": 65},' +
+    '{"date": "2015-11-05 14:01:57", "work_type": "lc_pn", "application_type": "Priority Notice", "document_id": 65},' +
+    '{"date": "2015-11-05 13:56:57", "work_type": "lc_pn", "application_type": "Priority Notice", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "lc_rect", "application_type": "C1", "document_id": 65},' +
+    '{"date": "2015-11-05 14:06:57", "work_type": "lc_renewal", "application_type": "WO", "document_id": 65},' +
+    '{"date": "2015-11-05 14:05:57", "work_type": "lc_renewal", "application_type": "PA", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "lc_stored", "application_type": "F", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "lc_stored", "application_type": "D1", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "bank_stored", "application_type": "WO(B)", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "cancel_part", "application_type": "C4", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "cancel_part", "application_type": "D2", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "cancel_stored", "application_type": "WO(B)", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "unknown", "application_type": "Unknown", "document_id": 65}' +
 ']'
 
 request = Net::HTTP::Put.new('/applications')
