@@ -28,26 +28,26 @@ stock_data = '[' +
     '{"date": "2015-11-05 13:47:55", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 53},' +
     '{"date": "2015-11-05 13:45:56", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 56},' +
     '{"date": "2015-11-05 13:48:56", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 59},' +
-    '{"date": "2015-11-05 13:41:56", "work_type": "full_search", "application_type": "Full Search", "document_id": 60},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "full_search", "application_type": "Full Search", "document_id": 61},' +
-    '{"date": "2015-11-05 13:42:56", "work_type": "bank_search", "application_type": "Bank Search", "document_id": 62},' +
-    '{"date": "2015-11-05 13:43:56", "work_type": "bank_search", "application_type": "Bank Search", "document_id": 63},' +
-    '{"date": "2015-11-05 13:44:56", "work_type": "full_search", "application_type": "Full Search", "document_id": 64},' +
-    '{"date": "2015-11-05 13:48:57", "work_type": "bank_search", "application_type": "Bank Search", "document_id": 65},' +
-    '{"date": "2015-11-05 14:01:57", "work_type": "lc_regn", "application_type": "C4", "document_id": 65},' +
-    '{"date": "2015-11-05 14:04:57", "work_type": "lc_regn", "application_type": "C1", "document_id": 65},' +
-    '{"date": "2015-11-05 14:03:57", "work_type": "lc_regn", "application_type": "D2", "document_id": 65},' +
-    '{"date": "2015-11-05 14:01:57", "work_type": "lc_pn", "application_type": "PN", "document_id": 65},' +
-    '{"date": "2015-11-05 13:56:57", "work_type": "lc_pn", "application_type": "PN", "document_id": 65},' +
-    '{"date": "2015-11-05 13:55:57", "work_type": "lc_rect", "application_type": "C1", "document_id": 65},' +
-    '{"date": "2015-11-05 14:06:57", "work_type": "lc_renewal", "application_type": "WO", "document_id": 65},' +
-    '{"date": "2015-11-05 14:05:57", "work_type": "lc_renewal", "application_type": "PA", "document_id": 65},' +
-    '{"date": "2015-11-05 13:55:57", "work_type": "lc_stored", "application_type": "F", "document_id": 65},' +
-    '{"date": "2015-11-05 13:55:57", "work_type": "lc_stored", "application_type": "D1", "document_id": 65},' +
+    '{"date": "2015-11-05 13:41:56", "work_type": "full_search", "application_type": "K15", "document_id": 60},' +
+    '{"date": "2015-11-05 13:45:56", "work_type": "full_search", "application_type": "K15", "document_id": 61},' +
+    '{"date": "2015-11-05 13:42:56", "work_type": "bank_search", "application_type": "K16", "document_id": 62},' +
+    '{"date": "2015-11-05 13:43:56", "work_type": "bank_search", "application_type": "K16", "document_id": 63},' +
+    '{"date": "2015-11-05 13:44:56", "work_type": "full_search", "application_type": "K15", "document_id": 64},' +
+    '{"date": "2015-11-05 13:48:57", "work_type": "bank_search", "application_type": "K16", "document_id": 65},' +
+    '{"date": "2015-11-05 14:01:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 65},' +
+    '{"date": "2015-11-05 14:04:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 65},' +
+    '{"date": "2015-11-05 14:03:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 65},' +
+    '{"date": "2015-11-05 14:01:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 65},' +
+    '{"date": "2015-11-05 13:56:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "lc_rect", "application_type": "K9", "document_id": 65},' +
+    '{"date": "2015-11-05 14:06:57", "work_type": "lc_renewal", "application_type": "K7", "document_id": 65},' +
+    '{"date": "2015-11-05 14:05:57", "work_type": "lc_renewal", "application_type": "K7", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "lc_stored", "application_type": "K2", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "lc_stored", "application_type": "K1", "document_id": 65},' +
     '{"date": "2015-11-05 13:55:57", "work_type": "bank_stored", "application_type": "WO(B)", "document_id": 65},' +
-    '{"date": "2015-11-05 13:55:57", "work_type": "cancel_part", "application_type": "C4", "document_id": 65},' +
-    '{"date": "2015-11-05 13:55:57", "work_type": "cancel_part", "application_type": "D2", "document_id": 65},' +
-    '{"date": "2015-11-05 13:55:57", "work_type": "cancel_stored", "application_type": "WO(B)", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "cancel_part", "application_type": "K11", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "cancel_part", "application_type": "K11", "document_id": 65},' +
+    '{"date": "2015-11-05 13:55:57", "work_type": "cancel_stored", "application_type": "K11", "document_id": 65},' +
     '{"date": "2015-11-05 13:55:57", "work_type": "unknown", "application_type": "Unknown", "document_id": 65}' +
 ']'
 
