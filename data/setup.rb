@@ -28,12 +28,12 @@ stock_data = '[' +
     '{"date": "2015-11-05 13:47:55", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 53},' +
     '{"date": "2015-11-05 13:45:56", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 56},' +
     '{"date": "2015-11-05 13:48:56", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 59},' +
-    '{"date": "2015-11-05 13:41:56", "work_type": "full_search", "application_type": "K15", "document_id": 60},' +
-    '{"date": "2015-11-05 13:45:56", "work_type": "full_search", "application_type": "K15", "document_id": 61},' +
-    '{"date": "2015-11-05 13:42:56", "work_type": "bank_search", "application_type": "K16", "document_id": 62},' +
-    '{"date": "2015-11-05 13:43:56", "work_type": "bank_search", "application_type": "K16", "document_id": 63},' +
-    '{"date": "2015-11-05 13:44:56", "work_type": "full_search", "application_type": "K15", "document_id": 64},' +
-    '{"date": "2015-11-05 13:48:57", "work_type": "bank_search", "application_type": "K16", "document_id": 65},' +
+    '{"date": "2015-11-05 13:41:56", "work_type": "search_full", "application_type": "K15", "document_id": 60},' +
+    '{"date": "2015-11-05 13:45:56", "work_type": "search_full", "application_type": "K15", "document_id": 61},' +
+    '{"date": "2015-11-05 13:42:56", "work_type": "search_bank", "application_type": "K16", "document_id": 62},' +
+    '{"date": "2015-11-05 13:43:56", "work_type": "search_bank", "application_type": "K16", "document_id": 63},' +
+    '{"date": "2015-11-05 13:44:56", "work_type": "search_full", "application_type": "K15", "document_id": 64},' +
+    '{"date": "2015-11-05 13:48:57", "work_type": "search_bank", "application_type": "K16", "document_id": 65},' +
     '{"date": "2015-11-05 14:01:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 65},' +
     '{"date": "2015-11-05 14:04:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 65},' +
     '{"date": "2015-11-05 14:03:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 65},' +
