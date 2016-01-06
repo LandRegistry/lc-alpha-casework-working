@@ -26,16 +26,20 @@ def get_application_list(cursor, list_type):
 
     if list_type == 'all':
         cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to "
-                       "FROM pending_application order by date_received desc")
+                       "FROM pending_application "
+                       "WHERE lock_ind IS NULL "
+                       "order by date_received desc")
     elif bank_regn_type != '':
         cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to "
                        "FROM pending_application "
-                       "WHERE application_type=%(bank_regn_type)s order by date_received desc",
+                       "WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL "
+                       "order by date_received desc",
                        {"bank_regn_type": bank_regn_type})
     else:
         cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to "
                        "FROM pending_application "
-                       "WHERE work_type=%(list_type)s order by date_received", {"list_type": list_type})
+                       "WHERE work_type=%(list_type)s AND lock_ind IS NULL "
+                       "order by date_received", {"list_type": list_type})
     rows = cursor.fetchall()
     applications = []
 
@@ -72,6 +76,18 @@ def get_application_by_id(cursor, appn_id):
         "assigned_to": row['assigned_to'],
     }
 
+
+def lock_application(cursor, appn_id):
+    cursor.execute("UPDATE pending_application SET lock_ind = 'Y' "
+                   "WHERE id=%(id)s and lock_ind IS NULL ", {"id": appn_id})
+
+    if cursor.rowcount == 0:
+        print("row count zero!!!!!!")
+        return None
+    else:
+        return "success"
+
+    print("row set to locked")
 
 def update_application_details(cursor, appn_id, data):
     cursor.execute("UPDATE pending_application SET application_data=%(data)s, status=%(status)s, "
