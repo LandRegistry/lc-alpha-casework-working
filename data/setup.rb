@@ -37,8 +37,8 @@ stock_data = '[' +
     '{"date": "2015-11-05 14:01:57", "work_type": "lc_regn", "application_type": "C4", "document_id": 65},' +
     '{"date": "2015-11-05 14:04:57", "work_type": "lc_regn", "application_type": "C1", "document_id": 65},' +
     '{"date": "2015-11-05 14:03:57", "work_type": "lc_regn", "application_type": "D2", "document_id": 65},' +
-    '{"date": "2015-11-05 14:01:57", "work_type": "lc_pn", "application_type": "Priority Notice", "document_id": 65},' +
-    '{"date": "2015-11-05 13:56:57", "work_type": "lc_pn", "application_type": "Priority Notice", "document_id": 65},' +
+    '{"date": "2015-11-05 14:01:57", "work_type": "lc_pn", "application_type": "PN", "document_id": 65},' +
+    '{"date": "2015-11-05 13:56:57", "work_type": "lc_pn", "application_type": "PN", "document_id": 65},' +
     '{"date": "2015-11-05 13:55:57", "work_type": "lc_rect", "application_type": "C1", "document_id": 65},' +
     '{"date": "2015-11-05 14:06:57", "work_type": "lc_renewal", "application_type": "WO", "document_id": 65},' +
     '{"date": "2015-11-05 14:05:57", "work_type": "lc_renewal", "application_type": "PA", "document_id": 65},' +

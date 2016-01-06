@@ -15,7 +15,9 @@ import base64
 
 valid_types = ['all', 'pab', 'wob',
                'bank', 'bank_regn', 'bank_amend', 'bank_rect', 'bank_with', 'bank_stored',
-               'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
+               'lc_regn', 'lc', 'lc_pn', 'lc_rect', 'lc_renewal', 'lc_stored',
+               'amend', 'cancel', 'canc', 'canc_part', 'canc_stored',
+               'prt_search', 'search', 'full_search', 'bank_search' 'oc']
 
 
 @app.route('/', methods=["GET"])
