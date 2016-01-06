@@ -15,7 +15,9 @@ import base64
 
 valid_types = ['all', 'pab', 'wob',
                'bank', 'bank_regn', 'bank_amend', 'bank_rect', 'bank_with', 'bank_stored',
-               'lc_regn', 'amend', 'cancel', 'prt_search', 'search', 'oc']
+               'lc_regn', 'lc', 'lc_pn', 'lc_rect', 'lc_renewal', 'lc_stored',
+               'amend', 'cancel', 'canc', 'cancel_part', 'cancel_stored',
+               'prt_search', 'search', 'search_full', 'search_bank', 'oc']
 
 
 @app.route('/', methods=["GET"])
@@ -165,9 +167,13 @@ def create_documents(size):
         logging.error('Content-Type is not a valid image format')
         return Response(status=415)
 
-    # ocr form to detect application type
-    image_as_bytes = io.BytesIO(request.data)
-    form_type = recognise(image_as_bytes)
+    if 'type' in request.args:
+        logging.info("Form type specified")
+        form_type = request.args['type']
+    else:
+        # ocr form to detect application type
+        image_as_bytes = io.BytesIO(request.data)
+        form_type = recognise(image_as_bytes)
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -322,6 +328,9 @@ def get_image(doc_id, page_no):
         return Response(status=404)
 
     row = rows[0]
+
+    data = row['image']
+    print(type(data))
 
     return Response(row['image'], status=200, mimetype=row['content_type'])
 
