@@ -16,7 +16,7 @@ import base64
 valid_types = ['all', 'pab', 'wob',
                'bank', 'bank_regn', 'bank_amend', 'bank_rect', 'bank_with', 'bank_stored',
                'lc_regn', 'lc', 'lc_pn', 'lc_rect', 'lc_renewal', 'lc_stored',
-               'amend', 'cancel', 'canc', 'canc_part', 'canc_stored',
+               'amend', 'cancel', 'canc', 'cancel_part', 'cancel_stored',
                'prt_search', 'search', 'search_full', 'search_bank', 'oc']
 
 

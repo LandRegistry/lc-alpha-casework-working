@@ -16,12 +16,12 @@ stock_data = '[' +
     '{"date": "2015-11-05 13:47:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 28},' +
     '{"date": "2015-11-05 13:48:52", "work_type": "bank_regn", "application_type": "WO(B)", "document_id": 29},' +
     '{"date": "2015-11-05 13:49:53", "work_type": "bank_regn", "application_type": "PA(B)", "document_id": 66},' +
-    '{"date": "2015-11-05 13:41:52", "work_type": "cancel", "application_type": "WO(B)", "document_id": 31},' +
-    '{"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 33},' +
-    '{"date": "2015-11-05 13:42:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 35},' +
-    '{"date": "2015-11-05 13:43:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 37},' +
-    '{"date": "2015-11-05 13:44:53", "work_type": "cancel", "application_type": "WO(B)", "document_id": 39},' +
-    '{"date": "2015-11-05 13:46:54", "work_type": "cancel", "application_type": "WO(B)", "document_id": 41},' +
+    '{"date": "2015-11-05 13:41:52", "work_type": "cancel", "application_type": "K11", "document_id": 31},' +
+    '{"date": "2015-11-05 13:45:53", "work_type": "cancel", "application_type": "K11", "document_id": 33},' +
+    '{"date": "2015-11-05 13:42:53", "work_type": "cancel", "application_type": "K11", "document_id": 35},' +
+    '{"date": "2015-11-05 13:43:53", "work_type": "cancel", "application_type": "K11", "document_id": 37},' +
+    '{"date": "2015-11-05 13:44:53", "work_type": "cancel", "application_type": "K11", "document_id": 39},' +
+    '{"date": "2015-11-05 13:46:54", "work_type": "cancel", "application_type": "K11", "document_id": 41},' +
     '{"date": "2015-11-05 13:41:54", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 44},' +
     '{"date": "2015-11-05 13:43:54", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 47},' +
     '{"date": "2015-11-05 13:42:55", "work_type": "bank_amend", "application_type": "WO(B)", "document_id": 50},' +
