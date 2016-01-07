@@ -82,12 +82,10 @@ def lock_application(cursor, appn_id):
                    "WHERE id=%(id)s and lock_ind IS NULL ", {"id": appn_id})
 
     if cursor.rowcount == 0:
-        print("row count zero!!!!!!")
         return None
     else:
         return "success"
 
-    print("row set to locked")
 
 def update_application_details(cursor, appn_id, data):
     cursor.execute("UPDATE pending_application SET application_data=%(data)s, status=%(status)s, "

@@ -113,6 +113,7 @@ def get_application(appn_id):
 
     locked = lock_application(cursor, appn_id)
     if locked is None:
+        # Selected application already locked or no longer on work list
         complete(cursor)
         return Response(status=404)
     else:
