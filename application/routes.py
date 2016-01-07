@@ -8,7 +8,7 @@ import psycopg2.extras
 import requests
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
-    amend_application, lock_application
+    amend_application, set_lock_ind, clear_lock_ind
 import io
 from application.ocr import recognise
 import base64
@@ -106,21 +106,40 @@ def create_application():
     complete(cursor)
     return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
 
-
-@app.route('/applications/<appn_id>', methods=['GET'])
-def get_application(appn_id):
+@app.route('/applications/<appn_id>/lock', methods=['POST'])
+def lock_application(appn_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-
-    locked = lock_application(cursor, appn_id)
+    locked = set_lock_ind(cursor, appn_id)
     if locked is None:
         # Selected application already locked or no longer on work list
         complete(cursor)
         return Response(status=404)
     else:
-        appn = get_application_by_id(cursor, appn_id)
         complete(cursor)
+        return Response(status=200)
 
-        return Response(json.dumps(appn), status=200, mimetype='application/json')
+@app.route('/applications/<appn_id>/lock', methods=['DELETE'])
+def unlock_application(appn_id):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    clear_lock_ind(cursor, appn_id)
+    complete(cursor)
+    return Response(status=200)
+
+
+@app.route('/applications/<appn_id>', methods=['GET'])
+def get_application(appn_id):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+
+    # locked = lock_application(cursor, appn_id)
+    # if locked is None:
+    #     # Selected application already locked or no longer on work list
+    #     complete(cursor)
+    #     return Response(status=404)
+    # else:
+    appn = get_application_by_id(cursor, appn_id)
+    complete(cursor)
+
+    return Response(json.dumps(appn), status=200, mimetype='application/json')
 
 
 @app.route('/applications/<appn_id>', methods=['DELETE'])

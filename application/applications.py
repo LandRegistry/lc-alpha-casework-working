@@ -77,7 +77,7 @@ def get_application_by_id(cursor, appn_id):
     }
 
 
-def lock_application(cursor, appn_id):
+def set_lock_ind(cursor, appn_id):
     cursor.execute("UPDATE pending_application SET lock_ind = 'Y' "
                    "WHERE id=%(id)s and lock_ind IS NULL ", {"id": appn_id})
 
@@ -85,6 +85,11 @@ def lock_application(cursor, appn_id):
         return None
     else:
         return "success"
+
+
+def clear_lock_ind(cursor, appn_id):
+    cursor.execute("UPDATE pending_application SET lock_ind = NULL "
+                   "WHERE id=%(id)s", {"id": appn_id})
 
 
 def update_application_details(cursor, appn_id, data):
