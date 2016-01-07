@@ -319,7 +319,7 @@ def get_image(doc_id, page_no):
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
 
-    cursor.execute("select content_type, (image) from documents where document_id=%(doc_id)s and page=%(page)s",
+    cursor.execute("select content_type, image from documents where document_id=%(doc_id)s and page=%(page)s",
                    {"doc_id": doc_id, "page": page_no})
 
     rows = cursor.fetchall()
@@ -329,11 +329,10 @@ def get_image(doc_id, page_no):
         return Response(status=404)
 
     row = rows[0]
+    # Python returns blob as memoryview object, convert back to bytes
+    data = bytes(row['image'])
 
-    data = row['image']
-    print(type(data))
-
-    return Response(row['image'], status=200, mimetype=row['content_type'])
+    return Response(data, status=200, mimetype=row['content_type'])
 
 
 # =========== OTHER ROUTES ==============
