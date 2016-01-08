@@ -276,11 +276,11 @@ class TestWorking:
     # def test_ocr_k199(self):
     #     assert False
 
-    def test_ocr_k16(self):
+    def test_ocr_614(self):
         assert self.scan_image('6.14.tiff') == 'PA(B)'
 
-    def test_ocr_k19(self):
+    def test_ocr_646(self):
         assert self.scan_image('6.46.tiff') == 'WO(B)'
 
-    def test_ocr_k20(self):
+    def test_ocr_lrrabo(self):
         assert self.scan_image('LRRABO.tiff') == 'WO(B) Amend'

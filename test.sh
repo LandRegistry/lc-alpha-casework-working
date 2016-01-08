@@ -2,7 +2,7 @@
 
 export SETTINGS="config.DevelopmentConfig"
 if [ "$1" != "CI" ]; then
-    py.test --cov application tests/ --cov-report=term --cov-report=html --junit-xml=junit.xml
+    py.test -s --cov application tests/ --cov-report=term --cov-report=html --junit-xml=junit.xml
 else
     test="$(py.test --cov application tests/ --cov-report=term --cov-report=html --junit-xml=junit.xml)"
     code=$?

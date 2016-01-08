@@ -11,19 +11,19 @@ image_data = [
             {'pattern': '.*K(1|I|l)($|[^\d])', 'result': 'K1'},
             {'pattern': '.*K4', 'result': 'K4'},
             {'pattern': '.*K3', 'result': 'K3'},
-#"Form Kl"
             {'pattern': '.*K6', 'result': 'K6'},
             {'pattern': '.*K7', 'result': 'K7'},
             {'pattern': '.*K8', 'result': 'K8'},
             {'pattern': '.*K9', 'result': 'K9'},
             {'pattern': '.*K10', 'result': 'K10'},
+            {'pattern': '.*K12', 'result': 'K12'},
         ]
     },
     {
         'bounds': [0.264423, 0.028523, 0.184295, 0.06275],
         'options': [
             {'pattern': '.*K(1|I|l)3', 'result': 'K13'},
-            {'pattern': '.*K2', 'result': 'K2'},
+            {'pattern': '.*K2[^0]', 'result': 'K2'},
         ]
     },
     {
@@ -78,7 +78,9 @@ def recognise(filename):
     image = Image.open(filename)
 
     text_log = []
+    index = 0
     for item in image_data:
+        index += 1
         left = int(image.width * item['bounds'][0])
         top = int(image.height * item['bounds'][1])
         width = int(image.width * item['bounds'][2])
@@ -92,6 +94,9 @@ def recognise(filename):
             match = re.match(option['pattern'], text)
             if match is not None:
                 logging.info("Identified " + option['result'])
+                logging.info("Using block " + str(index))
+                logging.info("On text '" + text + "'")
+                logging.info('----')
                 return option['result']
 
     for line in text_log:
