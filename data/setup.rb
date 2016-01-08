@@ -183,71 +183,71 @@ end
 
 
 standard_data = [
-    { "type" => "PA(B)", "images" => ["img2_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img3_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img4_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img5_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img6_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img7_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img8_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img9_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img10_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img11_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img12_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img13_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img14_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img15_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img16_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img17_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img18_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img19_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img20_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img21_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img22_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img23_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img24_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img25_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img26_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img27_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img28_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img29_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img30_1.jpeg"] },
-    { "type" => "K11", "images" => ["img31_1.jpeg","img31_2.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img32_1.jpeg"] },
-    { "type" => "K11", "images" => ["img33_1.jpeg","img33_2.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img34_1.jpeg"] },
-    { "type" => "K11", "images" => ["img35_1.jpeg","img35_2.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img36_1.jpeg"] },
-    { "type" => "K11", "images" => ["img37_1.jpeg","img37_2.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img38_1.jpeg"] },
-    { "type" => "K11", "images" => ["img39_1.jpeg","img39_2.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img40_1.jpeg"] },
-    { "type" => "K11", "images" => ["img41_1.jpeg","img41_2.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img42_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img43_1.jpeg"] },
-    { "type" => "Unknown", "images" => ["img44_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img45_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img46_1.jpeg"] },
-    { "type" => "Unknown", "images" => ["img47_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img48_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img49_1.jpeg"] },
-    { "type" => "Unknown", "images" => ["img50_1.jpeg","img50_2.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img51_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img52_1.jpeg"] },
-    { "type" => "Unknown", "images" => ["img53_1.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img54_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img55_1.jpeg"] },
-    { "type" => "Unknown", "images" => ["img56_1.jpeg", "img56_2.jpeg"] },
-    { "type" => "WO(B)", "images" => ["img57_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img58_1.jpeg"] },
-    { "type" => "Unknown", "images" => ["img59_1.jpeg"] },
-    { "type" => "K15", "images" => ["img60_1.jpeg"] },
-    { "type" => "K15", "images" => ["img61_1.jpeg"] },
-    { "type" => "K16", "images" => ["img62_1.jpeg"] },
-    { "type" => "K16", "images" => ["img63_1.jpeg"] },
-    { "type" => "K15", "images" => ["img64_1.jpeg"] },
-    { "type" => "K16", "images" => ["img65_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img66_1.jpeg"] }
+    { "type" => "PA(B)", "images" => ["img2_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img3_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img4_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img5_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img6_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img7_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img8_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img9_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img10_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img11_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img12_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img13_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img14_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img15_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img16_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img17_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img18_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img19_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img20_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img21_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img22_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img23_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img24_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img25_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img26_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img27_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img28_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img29_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img30_1.tiff"] },
+    { "type" => "K11", "images" => ["img31_1.tiff","img31_2.tiff"] },
+    { "type" => "WO(B)", "images" => ["img32_1.tiff"] },
+    { "type" => "K11", "images" => ["img33_1.tiff","img33_2.tiff"] },
+    { "type" => "WO(B)", "images" => ["img34_1.tiff"] },
+    { "type" => "K11", "images" => ["img35_1.tiff","img35_2.tiff"] },
+    { "type" => "WO(B)", "images" => ["img36_1.tiff"] },
+    { "type" => "K11", "images" => ["img37_1.tiff","img37_2.tiff"] },
+    { "type" => "WO(B)", "images" => ["img38_1.tiff"] },
+    { "type" => "K11", "images" => ["img39_1.tiff","img39_2.tiff"] },
+    { "type" => "WO(B)", "images" => ["img40_1.tiff"] },
+    { "type" => "K11", "images" => ["img41_1.tiff","img41_2.tiff"] },
+    { "type" => "WO(B)", "images" => ["img42_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img43_1.tiff"] },
+    { "type" => "Unknown", "images" => ["img44_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img45_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img46_1.tiff"] },
+    { "type" => "Unknown", "images" => ["img47_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img48_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img49_1.tiff"] },
+    { "type" => "Unknown", "images" => ["img50_1.tiff","img50_2.tiff"] },
+    { "type" => "WO(B)", "images" => ["img51_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img52_1.tiff"] },
+    { "type" => "Unknown", "images" => ["img53_1.tiff"] },
+    { "type" => "WO(B)", "images" => ["img54_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img55_1.tiff"] },
+    { "type" => "Unknown", "images" => ["img56_1.tiff", "img56_2.tiff"] },
+    { "type" => "WO(B)", "images" => ["img57_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img58_1.tiff"] },
+    { "type" => "Unknown", "images" => ["img59_1.tiff"] },
+    { "type" => "K15", "images" => ["img60_1.tiff"] },
+    { "type" => "K15", "images" => ["img61_1.tiff"] },
+    { "type" => "K16", "images" => ["img62_1.tiff"] },
+    { "type" => "K16", "images" => ["img63_1.tiff"] },
+    { "type" => "K15", "images" => ["img64_1.tiff"] },
+    { "type" => "K16", "images" => ["img65_1.tiff"] },
+    { "type" => "PA(B)", "images" => ["img66_1.tiff"] }
 ]
 
 folder = File.dirname(__FILE__)
@@ -256,7 +256,7 @@ http = Net::HTTP.new(uri.host, uri.port)
 
 standard_data.each do |item|
     request = Net::HTTP::Post.new("/forms/A4?type=#{item['type']}")
-    request["Content-Type"] = "image/jpeg"
+    request["Content-Type"] = "image/tiff"
     element = item['images'][0]
     image = "#{folder}/images/#{element}"
     f = IO.binread(image)
@@ -269,7 +269,7 @@ standard_data.each do |item|
         result = JSON.parse(response.body)
         id = result['id']
         request = Net::HTTP::Post.new('/forms/' + id.to_s + '/A4')
-        request["Content-Type"] = "image/jpeg"
+        request["Content-Type"] = "image/tiff"
         element = item["images"][1]
         image = "#{folder}/images/#{element}"
         f = IO.binread(image)
@@ -282,4 +282,4 @@ standard_data.each do |item|
 end
 
 
-`cp #{folder}/images/*.jpeg ~/interim/`
+`cp #{folder}/images/*.tiff ~/interim/`
