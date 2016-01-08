@@ -1,4 +1,5 @@
 from application.routes import app
+from application.ocr import recognise
 from unittest import mock
 import psycopg2
 import os
@@ -84,128 +85,202 @@ class TestWorking:
         response = self.app.get("/")
         assert response.status_code == 200
 
-    @mock.patch('psycopg2.connect', return_value=mock_connection)
-    def test_row_insert(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.post('/applications', data=worklist_data, headers=headers)
-        assert response.status_code == 200
-        dict = json.loads(response.data.decode())
-        assert dict['id'] == 42
+    # @mock.patch('psycopg2.connect', return_value=mock_connection)
+    # def test_row_insert(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.post('/applications', data=worklist_data, headers=headers)
+    #     assert response.status_code == 200
+    #     dict = json.loads(response.data.decode())
+    #     assert dict['id'] == 42
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_connection)
+    # def test_not_json(self, mock_connect):
+    #     headers = {'Content-Type': 'application/xml'}
+    #     response = self.app.post('/applications', data=valid_data, headers=headers)
+    #     assert response.status_code == 415
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_connection)
+    # def test_no_date(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.post('/applications', data=no_date, headers=headers)
+    #     assert response.status_code == 400
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_connection)
+    # def test_no_type(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.post('/applications', data=no_ref, headers=headers)
+    #     assert response.status_code == 400
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    # def test_get(self, mock_connect):
+    #     response = self.app.get('/applications/42', data=valid_data)
+    #     assert response.status_code == 200
+    #     data = json.loads(response.data.decode())
+    #     assert data['work_type'] == 'bank_regn'
+    #
+    # @mock.patch('psycopg2.connect', side_effect=psycopg2.OperationalError('Fail'))
+    # def test_get_connect_failed(self, mock_connect):
+    #     response = self.app.get('/applications/42', data=valid_data)
+    #     assert response.status_code == 500
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_connection_no_data)
+    # def test_get_no_result(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.get('/applications/42', data=no_data)
+    #     assert response.status_code == 404
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_connection_no_data)
+    # def test_invalid_work_list(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.get('/applications?type=wrong_type', data=search_data, headers=headers)
+    #     assert response.status_code == 400
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_connection_no_data)
+    # def test_get_pab_list(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.get('/applications?type=pab', data=search_data, headers=headers)
+    #     assert response.status_code == 200
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_connection_no_data)
+    # def test_get_wob_list(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.get('/applications?type=wob', data=search_data, headers=headers)
+    #     assert response.status_code == 200
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    # def test_get_all_list(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.get('/applications?type=all', data=worklist_data, headers=headers)
+    #     assert response.status_code == 200
+    #
+    # @mock.patch('psycopg2.connect', side_effect=psycopg2.OperationalError('Fail'))
+    # def test_work_list_connect_failed(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.get('/applications', data=worklist_data, headers=headers)
+    #     assert response.status_code == 500
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    # def test_get_other_list(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.get('/applications?type=amend', data=worklist_data, headers=headers)
+    #     assert response.status_code == 200
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    # def test_work_item_insert(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.post('/applications', data=worklist_data, headers=headers)
+    #     assert response.status_code == 200
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    # def test_work_item_invalid_data(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.post('/applications', data='{"foo": "bar"}', headers=headers)
+    #     assert response.status_code == 400
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    # def test_work_item_invalid_header(self, mock_connect):
+    #     headers = {'Content-Type': 'text'}
+    #     response = self.app.post('/applications', data=worklist_data, headers=headers)
+    #     assert response.status_code == 415
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_worklist_connection_del)
+    # def test_work_item_delete_fail(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.delete('/applications/16', headers=headers)
+    #     assert response.status_code == 404
+    #
+    # @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
+    # def test_work_item_delete(self, mock_connect):
+    #     headers = {'Content-Type': 'application/json'}
+    #     response = self.app.delete('/applications/16', headers=headers)
+    #     assert response.status_code == 204
+    #
+    # @mock.patch('requests.get', return_value=keyno_get)
+    # def test_get_keyholder(self, mock_get):
+    #     response = self.app.get('/keyholders/1123456')
+    #     data = json.loads(response.data.decode())
+    #     print(data)
+    #     assert data['key_number'] == '1234567'
+    #     assert response.status_code == 200
+    #
+    # @mock.patch('psycopg2.connect', return_value=counties_get)
+    # def test_get_counties(self, mock_get):
+    #     response = self.app.get('/counties')
+    #     print(response.data)
+    #     data = json.loads(response.data.decode())
+    #     assert len(data) == 2
+    #     assert data[0] == "Devon"
 
-    @mock.patch('psycopg2.connect', return_value=mock_connection)
-    def test_not_json(self, mock_connect):
-        headers = {'Content-Type': 'application/xml'}
-        response = self.app.post('/applications', data=valid_data, headers=headers)
-        assert response.status_code == 415
+    def scan_image(self, file):
+        filename = os.path.join(dir_, "ocr_test/" + file)
+        file_bytes = open(filename, 'rb')
+        return recognise(file_bytes)
 
-    @mock.patch('psycopg2.connect', return_value=mock_connection)
-    def test_no_date(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.post('/applications', data=no_date, headers=headers)
-        assert response.status_code == 400
+    def test_ocr_k1(self):
+        assert self.scan_image('k1.tiff') == 'K1'
 
-    @mock.patch('psycopg2.connect', return_value=mock_connection)
-    def test_no_type(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.post('/applications', data=no_ref, headers=headers)
-        assert response.status_code == 400
+    def test_ocr_k2(self):
+        assert self.scan_image('k2.tiff') == 'K2'
 
-    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
-    def test_get(self, mock_connect):
-        response = self.app.get('/applications/42', data=valid_data)
-        assert response.status_code == 200
-        data = json.loads(response.data.decode())
-        assert data['work_type'] == 'bank_regn'
+    def test_ocr_k3(self):
+        assert self.scan_image('k3.tiff') == 'K3'
 
-    @mock.patch('psycopg2.connect', side_effect=psycopg2.OperationalError('Fail'))
-    def test_get_connect_failed(self, mock_connect):
-        response = self.app.get('/applications/42', data=valid_data)
-        assert response.status_code == 500
+    def test_ocr_k4(self):
+        assert self.scan_image('k4.tiff') == 'K4'
 
-    @mock.patch('psycopg2.connect', return_value=mock_connection_no_data)
-    def test_get_no_result(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.get('/applications/42', data=no_data)
-        assert response.status_code == 404
+    def test_ocr_k6(self):
+        assert self.scan_image('k6.tiff') == 'K6'
 
-    @mock.patch('psycopg2.connect', return_value=mock_connection_no_data)
-    def test_invalid_work_list(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.get('/applications?type=wrong_type', data=search_data, headers=headers)
-        assert response.status_code == 400
+    def test_ocr_k7(self):
+        assert self.scan_image('k7.tiff') == 'K7'
 
-    @mock.patch('psycopg2.connect', return_value=mock_connection_no_data)
-    def test_get_pab_list(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.get('/applications?type=pab', data=search_data, headers=headers)
-        assert response.status_code == 200
+    def test_ocr_k8(self):
+        assert self.scan_image('k8.tiff') == 'K8'
 
-    @mock.patch('psycopg2.connect', return_value=mock_connection_no_data)
-    def test_get_wob_list(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.get('/applications?type=wob', data=search_data, headers=headers)
-        assert response.status_code == 200
+    def test_ocr_k9(self):
+        assert self.scan_image('k9.tiff') == 'K9'
 
-    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
-    def test_get_all_list(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.get('/applications?type=all', data=worklist_data, headers=headers)
-        assert response.status_code == 200
+    def test_ocr_k10(self):
+        assert self.scan_image('k10.tiff') == 'K10'
 
-    @mock.patch('psycopg2.connect', side_effect=psycopg2.OperationalError('Fail'))
-    def test_work_list_connect_failed(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.get('/applications', data=worklist_data, headers=headers)
-        assert response.status_code == 500
+    def test_ocr_k11(self):
+        assert self.scan_image('k11.tiff') == 'K11'
 
-    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
-    def test_get_other_list(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.get('/applications?type=amend', data=worklist_data, headers=headers)
-        assert response.status_code == 200
+    def test_ocr_k12(self):
+        assert self.scan_image('k12.tiff') == 'K12'
 
-    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
-    def test_work_item_insert(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.post('/applications', data=worklist_data, headers=headers)
-        assert response.status_code == 200
+    def test_ocr_k13(self):
+        assert self.scan_image('k13.tiff') == 'K13'
 
-    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
-    def test_work_item_invalid_data(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.post('/applications', data='{"foo": "bar"}', headers=headers)
-        assert response.status_code == 400
+    def test_ocr_k15(self):
+        assert self.scan_image('k15.tiff') == 'K15'
 
-    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
-    def test_work_item_invalid_header(self, mock_connect):
-        headers = {'Content-Type': 'text'}
-        response = self.app.post('/applications', data=worklist_data, headers=headers)
-        assert response.status_code == 415
+    def test_ocr_k16(self):
+        assert self.scan_image('k16.tiff') == 'K16'
 
-    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection_del)
-    def test_work_item_delete_fail(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.delete('/applications/16', headers=headers)
-        assert response.status_code == 404
+    def test_ocr_k19(self):
+        assert self.scan_image('k19.tiff') == 'K19'
 
-    @mock.patch('psycopg2.connect', return_value=mock_worklist_connection)
-    def test_work_item_delete(self, mock_connect):
-        headers = {'Content-Type': 'application/json'}
-        response = self.app.delete('/applications/16', headers=headers)
-        assert response.status_code == 204
+    def test_ocr_k20(self):
+        assert self.scan_image('k20.tiff') == 'K20'
 
-    @mock.patch('requests.get', return_value=keyno_get)
-    def test_get_keyholder(self, mock_get):
-        response = self.app.get('/keyholders/1123456')
-        data = json.loads(response.data.decode())
-        print(data)
-        assert data['key_number'] == '1234567'
-        assert response.status_code == 200
+    # def test_ocr_k108(self):
+    #     assert False
+    #
+    # def test_ocr_k113(self):
+    #     assert False
+    #
+    # def test_ocr_k164(self):
+    #     assert False
+    #
+    # def test_ocr_k199(self):
+    #     assert False
 
-    @mock.patch('psycopg2.connect', return_value=counties_get)
-    def test_get_counties(self, mock_get):
-        response = self.app.get('/counties')
-        print(response.data)
-        data = json.loads(response.data.decode())
-        assert len(data) == 2
-        assert data[0] == "Devon"
+    def test_ocr_k16(self):
+        assert self.scan_image('6.14.tiff') == 'PA(B)'
+
+    def test_ocr_k19(self):
+        assert self.scan_image('6.46.tiff') == 'WO(B)'
+
+    def test_ocr_k20(self):
+        assert self.scan_image('LRRABO.tiff') == 'WO(B) Amend'
