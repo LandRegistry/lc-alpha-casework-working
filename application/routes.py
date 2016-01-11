@@ -375,10 +375,12 @@ def get_counties_list():
 
 
 @app.route('/complex_names/<name>', methods=['GET'])
+@cross_origin()
 def get_complex_names(name):
-    uri = app.config['LEGACY_ADAPTER_URI'] + 'complex_names/' + name
+    uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names/' + name
     response = requests.get(uri)
-    return Response(response.text, status=response.status_code, mimetype='application/json')
+    return Response(response.text, status=200, mimetype='application/json')
+#return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
 @app.route('/complex_names/search', methods=['POST'])
