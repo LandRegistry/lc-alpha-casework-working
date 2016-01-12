@@ -60,6 +60,9 @@ if response.code != "200"
 end
 
 
+
+
+
 counties = counties = '[' +
     '{ "eng": "Bath and NE Somerset" },' +
     '{ "eng": "Bedford" },' +
@@ -282,4 +285,23 @@ standard_data.each do |item|
 end
 
 
+res = '[' +
+      '{"request_id": "1", "print_status": "", "res_type": "search"},' +
+      '{"request_id": "2", "print_status": "", "res_type": "search nr"},' +
+      '{"request_id": "3", "print_status": "", "res_type": "registration"},' +
+      '{"request_id": "4", "print_status": "", "res_type": "registration"},' +
+      '{"request_id": "5", "print_status": "", "res_type": "registration"},' +
+      '{"request_id": "6", "print_status": "", "res_type": "registration"}' +
+	']'
+request = Net::HTTP::Post.new('/results')
+request.body = res
+request["Content-Type"] = "application/json"
+response = http.request(request)
+if response.code != "200"
+    puts "/results: #{response.code}"
+end
+
 `cp #{folder}/images/*.jpeg ~/interim/`
+
+
+
