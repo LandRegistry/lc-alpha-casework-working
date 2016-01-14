@@ -492,3 +492,105 @@ def complete(cursor):
     cursor.connection.commit()
     cursor.close()
     cursor.connection.close()
+
+#clear the results table
+@app.route('/results', methods=['DELETE'])
+def delete_results():  # pragma: no cover
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+    cursor = connect()
+    cursor.execute('DELETE FROM RESULTS')
+    complete(cursor)
+    return Response(status=200)
+
+#insert into the results table
+@app.route('/results', methods=['POST'])
+def load_results():
+    print("Calling load results")
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+
+    if request.headers['Content-Type'] != "application/json":
+        logging.error('Content-Type is not JSON')
+        return Response(status=415)
+    json_data = request.get_json(force=True)
+    print("here")
+
+    #go and get some genuine landcharges.request.ids to feed into the results table
+    id_count = str(len(json_data))
+    print("id_count " + id_count)
+    response = requests.get(app.config['LAND_CHARGES_URI'] + '/request_ids/' + id_count)
+    print("called ")
+    id_list = json.loads(response.content.decode('utf-8'))
+    print("id list " + str(len(id_list)))
+    cursor = connect()
+    ctr = 0
+    print("id number 1 is " + str(id_list[0]['request_id']))
+    for item in json_data:
+
+        cursor.execute('INSERT INTO results (request_id, print_status, res_type) ' +
+        ' VALUES (%(request_id)s, %(print_status)s, %(res_type)s) ',
+                       {
+                           # 'request_id': item['request_id'],
+                           'request_id': id_list[ctr]['request_id'],
+                           'print_status': item['print_status'],
+                           'res_type': item['res_type']
+                       })
+        ctr = ctr+1
+    complete(cursor)
+    return Response(status=200)
+
+# update the status of the result to show it has been printed.
+@app.route('/results/<result_id>/<result_status>', methods=['POST', 'GET'])
+def set_result_status(result_id, result_status):
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+    cursor = connect()
+    cursor.execute('UPDATE results set print_status = %(result_status)s WHERE id = %(result_id)s',
+                   {
+                       "result_status": result_status,
+                       "result_id": result_id}
+                   )
+    complete(cursor)
+    return Response(status=200)
+
+#get details of the passed in result.id
+@app.route('/result/<id>', methods=["GET"])
+def get_result(id):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute("SELECT id, request_id, res_type " +
+                   "FROM results Where id = %(id)s ",
+                       {'id': id})
+    rows = cursor.fetchall()
+    print("row count = " + str(len(rows)) )
+    res_list = []
+    rowcount = 1
+    for row in rows:
+        job = {
+        'id': row['id'], 'request_id': row['request_id'], 'res_type': row['res_type']
+        }
+        rowcount = rowcount + 1
+        res_list.append(job)
+    complete(cursor)
+    print("returning res" + str(len(res_list)))
+    return Response(json.dumps(res_list), status=200, mimetype='application/json')
+
+
+#get details of all results the are ready for printing
+@app.route('/results', methods=["GET"])
+def get_results():
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute("SELECT id, request_id, res_type " +
+                   "FROM results Where print_status <> 'Y' ORDER BY res_type ")
+    rows = cursor.fetchall()
+    print("row count = " + str(len(rows)) )
+    res_list = []
+    rowcount = 1
+    for row in rows:
+        job = {
+        'id': row['id'], 'request_id': row['request_id'], 'res_type': row['res_type']#, 'key_no': row['key_no'],
+        }
+        rowcount = rowcount + 1
+        res_list.append(job)
+    complete(cursor)
+    return Response(json.dumps(res_list), status=200, mimetype='application/json')
