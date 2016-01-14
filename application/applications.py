@@ -138,18 +138,20 @@ def complete_application(cursor, appn_id, data):
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
     response = requests.post(url, data=json.dumps(data), headers=headers)
+    print('this is the resonse in casework-api', response.status_code)
     if response.status_code != 200:
         return response
 
     # Archive document
     regns = response.json()
     date_string = datetime.now().strftime("%Y_%m_%d")
-    for reg_no in regns['new_registrations']:
+    # TODO: code commented below needs looking at as archive is now done by legacy-adapter
+    """for reg_no in regns['new_registrations']:
         url = app.config['DOCUMENT_API_URI'] + '/archive/' + date_string + '/' + str(reg_no)
         body = {'document_id': data['document_id']}
         doc_response = requests.post(url, data=json.dumps(body), headers=headers)
         if doc_response.status_code != 200:
-            return doc_response
+            return doc_response """
 
     # Delete work-item
     delete_application(cursor, appn_id)
