@@ -93,6 +93,8 @@ def create_application():
     if 'application_type' not in data or 'date_received' not in data \
             or "work_type" not in data or 'application_data' not in data:
         return Response(status=400)
+    if data['application_data'] == "":
+        data['application_data'] = {"document_id": data['document_id']} #to get incoming scanned docs to display
     cursor = connect()
     item_id = insert_new_application(cursor, data)
 
