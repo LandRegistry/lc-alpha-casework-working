@@ -33,10 +33,19 @@ stock_data = '[' +
     '{"date": "2015-11-05 13:42:56", "work_type": "search_bank", "application_type": "K16", "document_id": 62},' +
     '{"date": "2015-11-05 13:43:56", "work_type": "search_bank", "application_type": "K16", "document_id": 63},' +
     '{"date": "2015-11-05 13:44:56", "work_type": "search_full", "application_type": "K15", "document_id": 64},' +
+    '{"date": "2015-11-05 14:01:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 66},' +
+    '{"date": "2015-11-05 14:14:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 66},' +
+    '{"date": "2015-11-05 14:23:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 66},' +
+    '{"date": "2015-11-05 14:03:57", "work_type": "lc_regn", "application_type": "K2", "document_id": 67},' +
+    '{"date": "2015-11-05 14:17:57", "work_type": "lc_regn", "application_type": "K2", "document_id": 67},' +
+    '{"date": "2015-11-05 14:24:57", "work_type": "lc_regn", "application_type": "K2", "document_id": 67},' +
+    '{"date": "2015-11-05 14:06:57", "work_type": "lc_regn", "application_type": "K3", "document_id": 68},' +
+    '{"date": "2015-11-05 14:19:57", "work_type": "lc_regn", "application_type": "K3", "document_id": 68},' +
+    '{"date": "2015-11-05 14:29:57", "work_type": "lc_regn", "application_type": "K3", "document_id": 68},' +
+    '{"date": "2015-11-05 14:09:57", "work_type": "lc_regn", "application_type": "K4", "document_id": 69},' +
+    '{"date": "2015-11-05 14:19:57", "work_type": "lc_regn", "application_type": "K4", "document_id": 69},' +
+    '{"date": "2015-11-05 14:31:57", "work_type": "lc_regn", "application_type": "K4", "document_id": 69},' +
     '{"date": "2015-11-05 13:48:57", "work_type": "search_bank", "application_type": "K16", "document_id": 65},' +
-    '{"date": "2015-11-05 14:01:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 65},' +
-    '{"date": "2015-11-05 14:04:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 65},' +
-    '{"date": "2015-11-05 14:03:57", "work_type": "lc_regn", "application_type": "K1", "document_id": 65},' +
     '{"date": "2015-11-05 14:01:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 65},' +
     '{"date": "2015-11-05 13:56:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 65},' +
     '{"date": "2015-11-05 13:55:57", "work_type": "lc_rect", "application_type": "K9", "document_id": 65},' +
@@ -250,7 +259,11 @@ standard_data = [
     { "type" => "K16", "images" => ["img63_1.jpeg"] },
     { "type" => "K15", "images" => ["img64_1.jpeg"] },
     { "type" => "K16", "images" => ["img65_1.jpeg"] },
-    { "type" => "PA(B)", "images" => ["img66_1.jpeg"] }
+    { "type" => "PA(B)", "images" => ["img66_1.jpeg"] },
+    { "type" => "K1", "images" => ["img_67_1.jpg"] },
+    { "type" => "K2", "images" => ["img_68_1.jpg"] },
+    { "type" => "K3", "images" => ["img69_1.jpg"] },
+    { "type" => "K4", "images" => ["img70_1.jpg"] },
 ]
 
 folder = File.dirname(__FILE__)
