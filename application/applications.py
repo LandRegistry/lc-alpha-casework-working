@@ -1,5 +1,6 @@
 import json
 from application import app
+from application.documents import get_document, get_image
 import requests
 from datetime import datetime
 
@@ -138,20 +139,33 @@ def complete_application(cursor, appn_id, data):
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
     response = requests.post(url, data=json.dumps(data), headers=headers)
+    print(data)
+
     print('this is the resonse in casework-api', response.status_code)
     if response.status_code != 200:
         return response
 
     # Archive document
     regns = response.json()
-    date_string = datetime.now().strftime("%Y_%m_%d")
-    # TODO: code commented below needs looking at as archive is now done by legacy-adapter
-    """for reg_no in regns['new_registrations']:
-        url = app.config['DOCUMENT_API_URI'] + '/archive/' + date_string + '/' + str(reg_no)
-        body = {'document_id': data['document_id']}
-        doc_response = requests.post(url, data=json.dumps(body), headers=headers)
-        if doc_response.status_code != 200:
-            return doc_response """
+    print(regns)
+
+    document_id = data['application_data']['document_id']
+    pages = get_document(cursor, document_id)
+
+    for regn in regns['new_registrations']:
+        number = regn['number']
+        date = regn['date']
+        for page in pages:
+            image = get_image(cursor, document_id, page)
+            url = "{}/images/{}/{}/{}".format(app.config['LEGACY_ADAPTER_URI'],
+                                              date,
+                                              number,
+                                              'A4')
+            headers = {'Content-Type': image['mimetype']}
+            doc_response = requests.put(url, data=image['bytes'], headers=headers)
+            if doc_response.status_code != 200:
+                # TODO: error!
+                pass
 
     # Delete work-item
     delete_application(cursor, appn_id)

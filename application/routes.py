@@ -9,6 +9,7 @@ import requests
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
     amend_application, set_lock_ind, clear_lock_ind
+from application.documents import get_document, get_image
 import io
 from application.ocr import recognise
 import base64
@@ -320,40 +321,22 @@ def get_document_info(doc_id):
     # retrieve page info for a document
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute("select page from documents where document_id = %(id)s", {"id": doc_id})
-    rows = cursor.fetchall()
+    data = get_document(cursor, doc_id)
     complete(cursor)
-
-    data = []
-    if len(rows) == 0:
-        data = None
-    else:
-        for row in rows:
-            data.append(row['page'])
-
     return Response(json.dumps({"images": data}), status=200, mimetype='application/json')
 
 
 @app.route('/forms/<int:doc_id>/<int:page_no>', methods=["GET"])
-def get_image(doc_id, page_no):
+def get_form_image(doc_id, page_no):
     # retrieve byte[] for a page
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-
-    cursor.execute("select content_type, image from documents where document_id=%(doc_id)s and page=%(page)s",
-                   {"doc_id": doc_id, "page": page_no})
-
-    rows = cursor.fetchall()
+    data = get_image(cursor, doc_id, page_no)
     complete(cursor)
-
-    if len(rows) == 0:
+    if data is None:
         return Response(status=404)
 
-    row = rows[0]
-    # Python returns blob as memoryview object, convert back to bytes
-    data = bytes(row['image'])
-
-    return Response(data, status=200, mimetype=row['content_type'])
+    return Response(data['bytes'], status=200, mimetype=data['mimetype'])
 
 
 # =========== OTHER ROUTES ==============
