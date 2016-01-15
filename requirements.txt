@@ -17,3 +17,4 @@ responses==0.3.0
 flask-cors
 pillow
 pytesseract
+kombu

@@ -1,5 +1,5 @@
 from application import app
-from flask import Response, request, send_from_directory, send_file,  url_for
+from flask import Response, request, send_from_directory, send_file,  url_for, g
 from flask.ext.cors import cross_origin
 import json
 import logging
@@ -10,9 +10,11 @@ from application.applications import insert_new_application, get_application_lis
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
     amend_application, set_lock_ind, clear_lock_ind
 from application.documents import get_document, get_image
+from application.error import raise_error
 import io
 from application.ocr import recognise
-import base64
+import traceback
+
 
 valid_types = ['all', 'pab', 'wob',
                'bank', 'bank_regn', 'bank_amend', 'bank_rect', 'bank_with', 'bank_stored',
@@ -28,9 +30,20 @@ def index():
 
 @app.errorhandler(Exception)
 def error_handler(err):
-    logging.error('========== Error Caught ===========')
-    logging.error(err)
-    return Response(str(err), status=500)
+    logging.error('Unhandled exception: ' + str(err))
+    call_stack = traceback.format_exc()
+
+    lines = call_stack.split("\n")
+    for line in lines:
+        logging.error(line)
+
+    error = {
+        "type": "F",
+        "message": str(err),
+        "stack": call_stack
+    }
+    raise_error(error)
+    return Response(json.dumps(error), status=500)
 
 
 def check_lc_health():
@@ -63,6 +76,20 @@ def health():
     return Response(json.dumps(result), status=status, mimetype='application/json')
 
 
+@app.before_request
+def before_request():
+    logging.info("BEGIN %s %s [%s] (%s)",
+                 request.method, request.url, request.remote_addr, request.__hash__())
+
+
+@app.after_request
+def after_request(response):
+    logging.info('END %s %s [%s] (%s) -- %s',
+                 request.method, request.url, request.remote_addr, request.__hash__(),
+                 response.status)
+    return response
+
+
 # ============ APPLICATIONS ==============
 @app.route('/applications', methods=['GET'])
 def get_applications():
@@ -73,8 +100,10 @@ def get_applications():
         return Response("Error: '" + list_type + "' is not one of the accepted work list types", status=400)
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    applications = get_application_list(cursor, list_type)
-    complete(cursor)
+    try:
+        applications = get_application_list(cursor, list_type)
+    finally:
+        complete(cursor)
 
     data = json.dumps(applications, ensure_ascii=False)
     return Response(data, status=200, mimetype='application/json')
@@ -96,36 +125,35 @@ def create_application():
         return Response(status=400)
     if data['application_data'] == "":
         data['application_data'] = {"document_id": data['document_id']} #to get incoming scanned docs to display
+
     cursor = connect()
-    item_id = insert_new_application(cursor, data)
-
-    # if action == 'store':
-    #     item_id = insert_new_application(cursor, data)
-    # elif action == 'complete':
-    #     complete_application(cursor, data)
-    # else:
-    #     return Response("Invalid action", status=400)
-
-    complete(cursor)
+    try:
+        item_id = insert_new_application(cursor, data)
+    finally:
+        complete(cursor)
     return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
 
 @app.route('/applications/<appn_id>/lock', methods=['POST'])
 def lock_application(appn_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    locked = set_lock_ind(cursor, appn_id)
-    if locked is None:
-        # Selected application already locked or no longer on work list
+    try:
+        locked = set_lock_ind(cursor, appn_id)
+        if locked is None:
+            # Selected application already locked or no longer on work list
+            return Response(status=404)
+        else:
+            return Response(status=200)
+    finally:
         complete(cursor)
-        return Response(status=404)
-    else:
-        complete(cursor)
-        return Response(status=200)
+
 
 @app.route('/applications/<appn_id>/lock', methods=['DELETE'])
 def unlock_application(appn_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    clear_lock_ind(cursor, appn_id)
-    complete(cursor)
+    try:
+        clear_lock_ind(cursor, appn_id)
+    finally:
+        complete(cursor)
     return Response(status=200)
 
 
@@ -139,8 +167,10 @@ def get_application(appn_id):
     #     complete(cursor)
     #     return Response(status=404)
     # else:
-    appn = get_application_by_id(cursor, appn_id)
-    complete(cursor)
+    try:
+        appn = get_application_by_id(cursor, appn_id)
+    finally:
+        complete(cursor)
 
     return Response(json.dumps(appn), status=200, mimetype='application/json')
 
@@ -148,8 +178,10 @@ def get_application(appn_id):
 @app.route('/applications/<appn_id>', methods=['DELETE'])
 def remove_application(appn_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    rows = delete_application(cursor, appn_id)
-    complete(cursor)
+    try:
+        rows = delete_application(cursor, appn_id)
+    finally:
+        complete(cursor)
 
     if rows == 0:
         return Response(status=404)
@@ -166,17 +198,22 @@ def update_application(appn_id):
     data = request.get_json(force=True)
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
 
-    if action == 'store':
-        update_application_details(cursor, appn_id, data)
-        appn = get_application_by_id(cursor, appn_id)
-    elif action == 'complete':
-        appn = complete_application(cursor, appn_id, data)
-    elif action == 'amend':
-        appn = amend_application(cursor, appn_id, data)
-    else:
-        return Response("Invalid action", status=400)
+    try:
+        if action == 'store':
+            update_application_details(cursor, appn_id, data)
+            appn = get_application_by_id(cursor, appn_id)
+        elif action == 'complete':
+            appn = complete_application(cursor, appn_id, data)
+        elif action == 'amend':
+            appn = amend_application(cursor, appn_id, data)
+        else:
+            return Response("Invalid action", status=400)
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
 
-    complete(cursor)
+
     return Response(json.dumps(appn), status=200)
 
 # ============ FORMS ==============
@@ -199,29 +236,32 @@ def create_documents(size):
         form_type = recognise(image_as_bytes)
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('select max(document_id)+1 from documents')
 
-    cursor.execute('select max(document_id)+1 from documents')
+        next_doc_id = cursor.fetchone()
 
-    next_doc_id = cursor.fetchone()
+        if next_doc_id[0] is None:
+            next_doc_id[0] = 1
 
-    if next_doc_id[0] is None:
-        next_doc_id[0] = 1
+        cursor.execute("insert into documents (document_id, form_type, content_type, page, size, image) "
+                       "values ( %(document_id)s, %(form_type)s, %(content_type)s, %(page)s, %(size)s, "
+                       "%(image)s ) returning document_id",
+                       {
+                           "document_id": next_doc_id[0],
+                           "form_type": form_type,
+                           "content_type": content_type,
+                           "page": "1",
+                           "size": size,
+                           "image": psycopg2.Binary(request.data)
+                       })
+        res = cursor.fetchone()
 
-    cursor.execute("insert into documents (document_id, form_type, content_type, page, size, image) "
-                   "values ( %(document_id)s, %(form_type)s, %(content_type)s, %(page)s, %(size)s, "
-                   "%(image)s ) returning document_id",
-                   {
-                       "document_id": next_doc_id[0],
-                       "form_type": form_type,
-                       "content_type": content_type,
-                       "page": "1",
-                       "size": size,
-                       "image": psycopg2.Binary(request.data)
-                   })
-    res = cursor.fetchone()
-
-    document_id = res[0]
-    complete(cursor)
+        document_id = res[0]
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
 
     return Response(json.dumps({"id": document_id, "form_type": form_type}), status=201, mimetype='application/json')
 
@@ -235,24 +275,27 @@ def append_image(doc_id, size):
         return Response(status=415)
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('select max(page)+1 from documents where document_id=%(doc_id)s', {"doc_id": doc_id})
 
-    cursor.execute('select max(page)+1 from documents where document_id=%(doc_id)s', {"doc_id": doc_id})
+        next_page_no = cursor.fetchone()
+        if next_page_no[0] is None:
+            return Response(status=404)
 
-    next_page_no = cursor.fetchone()
-    if next_page_no[0] is None:
-        return Response(status=404)
-
-    cursor.execute("insert into documents (document_id, content_type, page, size, image) "
-                   "values ( %(document_id)s, %(content_type)s, %(page)s, %(size)s, %(image)s )",
-                   {
-                       "document_id": doc_id,
-                       "content_type": content_type,
-                       "page": next_page_no[0],
-                       "size": size,
-                       "image": psycopg2.Binary(request.data)
-                   })
-    rowcount = cursor.rowcount
-    complete(cursor)
+        cursor.execute("insert into documents (document_id, content_type, page, size, image) "
+                       "values ( %(document_id)s, %(content_type)s, %(page)s, %(size)s, %(image)s )",
+                       {
+                           "document_id": doc_id,
+                           "content_type": content_type,
+                           "page": next_page_no[0],
+                           "size": size,
+                           "image": psycopg2.Binary(request.data)
+                       })
+        rowcount = cursor.rowcount
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
 
     if rowcount == 0:
         return Response(status=404)
@@ -269,32 +312,35 @@ def change_image(doc_id, page_no, size):
         return Response(status=415)
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        if page_no == 1:
+            # ocr form to detect application type
+            bytes = io.BytesIO(request.data)
+            form_type = recognise(bytes)
+            # TODO: if form_type is different to the original type, need to consider updating any page 2,3 etc...
+        else:
+            cursor.execute('select form_type from documents where document_id=%(doc_id)s and page = 1', {"doc_id": doc_id})
 
-    if page_no == 1:
-        # ocr form to detect application type
-        bytes = io.BytesIO(request.data)
-        form_type = recognise(bytes)
-        # TODO: if form_type is different to the original type, need to consider updating any page 2,3 etc...
-    else:
-        cursor.execute('select form_type from documents where document_id=%(doc_id)s and page = 1', {"doc_id": doc_id})
+            row = cursor.fetchone()
+            if row is None:
+                return Response(status=404)
+            form_type = row['form_type']
 
-        row = cursor.fetchone()
-        if row is None:
-            return Response(status=404)
-        form_type = row['form_type']
-
-    cursor.execute("update documents set form_type=%(form_type)s, content_type=%(content_type)s, "
-                   "size=%(size)s , image=%(image)s where document_id=%(doc_id)s and page=%(page)s",
-                   {
-                       "doc_id": doc_id,
-                       "form_type": form_type,
-                       "content_type": content_type,
-                       "page": page_no,
-                       "size": size,
-                       "image": psycopg2.Binary(request.data)
-                   })
-    rowcount = cursor.rowcount
-    complete(cursor)
+        cursor.execute("update documents set form_type=%(form_type)s, content_type=%(content_type)s, "
+                       "size=%(size)s , image=%(image)s where document_id=%(doc_id)s and page=%(page)s",
+                       {
+                           "doc_id": doc_id,
+                           "form_type": form_type,
+                           "content_type": content_type,
+                           "page": page_no,
+                           "size": size,
+                           "image": psycopg2.Binary(request.data)
+                       })
+        rowcount = cursor.rowcount
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
 
     if rowcount == 0:
         return Response(status=404)
@@ -305,11 +351,15 @@ def change_image(doc_id, page_no, size):
 @app.route('/forms/<int:doc_id>/<int:page_no>', methods=["DELETE"])
 def delete_image(doc_id, page_no):
     cursor = connect()
-    cursor.execute("delete from documents where document_id=%(doc_id)s and page=%(page)s",
-                   {"doc_id": doc_id, "page": page_no})
+    try:
+        cursor.execute("delete from documents where document_id=%(doc_id)s and page=%(page)s",
+                       {"doc_id": doc_id, "page": page_no})
 
-    rowcount = cursor.rowcount
-    complete(cursor)
+        rowcount = cursor.rowcount
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
 
     if rowcount == 0:
         return Response(status=404)
@@ -321,8 +371,10 @@ def get_document_info(doc_id):
     # retrieve page info for a document
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    data = get_document(cursor, doc_id)
-    complete(cursor)
+    try:
+        data = get_document(cursor, doc_id)
+    finally:
+        complete(cursor)
     return Response(json.dumps({"images": data}), status=200, mimetype='application/json')
 
 
@@ -331,8 +383,10 @@ def get_form_image(doc_id, page_no):
     # retrieve byte[] for a page
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    data = get_image(cursor, doc_id, page_no)
-    complete(cursor)
+    try:
+        data = get_image(cursor, doc_id, page_no)
+    finally:
+        complete(cursor)
     if data is None:
         return Response(status=404)
 
@@ -352,10 +406,12 @@ def get_keyholder(key_number):
 @cross_origin()
 def get_counties_list():
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute("SELECT name FROM counties")
-    rows = cursor.fetchall()
-    counties = [row['name'] for row in rows]
-    complete(cursor)
+    try:
+        cursor.execute("SELECT name FROM counties")
+        rows = cursor.fetchall()
+        counties = [row['name'] for row in rows]
+    finally:
+        complete(cursor)
     return Response(json.dumps(counties), status=200, mimetype='application/json')
 
 
@@ -383,8 +439,12 @@ def delete():
     if not app.config['ALLOW_DEV_ROUTES']:
         return Response(status=403)
     cursor = connect()
-    cursor.execute("DELETE FROM documents")
-    complete(cursor)
+    try:
+        cursor.execute("DELETE FROM documents")
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
     return Response(status=200, mimetype='application/json')
 
 
@@ -395,17 +455,20 @@ def bulk_load():
 
     data = request.get_json(force=True)
     cursor = connect()
-    for item in data:
-        cursor.execute("INSERT INTO documents (id, metadata, image_paths) "
-                       "VALUES ( %(id)s, %(meta)s, %(image)s )",
-                       {
-                           'id': item['id'],
-                           'meta': json.dumps(item['metadata']),
-                           'image': json.dumps(item['image_paths'])
-                       })
-    cursor.execute("SELECT setval('documents_id_seq', (SELECT MAX(id) FROM documents)+1);")
-
-    complete(cursor)
+    try:
+        for item in data:
+            cursor.execute("INSERT INTO documents (id, metadata, image_paths) "
+                           "VALUES ( %(id)s, %(meta)s, %(image)s )",
+                           {
+                               'id': item['id'],
+                               'meta': json.dumps(item['metadata']),
+                               'image': json.dumps(item['image_paths'])
+                           })
+        cursor.execute("SELECT setval('documents_id_seq', (SELECT MAX(id) FROM documents)+1);")
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
     return Response(status=200, mimetype='application/json')
 
 
@@ -415,8 +478,12 @@ def clear_applications():  # pragma: no cover
         return Response(status=403)
 
     cursor = connect()
-    cursor.execute("DELETE FROM pending_application")
-    complete(cursor)
+    try:
+        cursor.execute("DELETE FROM pending_application")
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
     return Response(status=200)
 
 
@@ -427,8 +494,12 @@ def bulk_add_applications():  # pragma: no cover
 
     data = request.get_json(force=True)
     cursor = connect()
-    ids = bulk_insert_applications(cursor, data)
-    complete(cursor)
+    try:
+        ids = bulk_insert_applications(cursor, data)
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
     return Response(json.dumps({'ids': ids}), status=200, mimetype='application/json')
 
 
@@ -443,15 +514,19 @@ def load_counties():  # pragma: no cover
 
     json_data = request.get_json(force=True)
     cursor = connect()
-    for item in json_data:
-        if 'cym' not in item:
-            item['cym'] = None
+    try:
+        for item in json_data:
+            if 'cym' not in item:
+                item['cym'] = None
 
-        cursor.execute('INSERT INTO COUNTIES (name, welsh_name) VALUES (%(e)s, %(c)s)',
-                       {
-                           'e': item['eng'], 'c': item['cym']
-                       })
-    complete(cursor)
+            cursor.execute('INSERT INTO COUNTIES (name, welsh_name) VALUES (%(e)s, %(c)s)',
+                           {
+                               'e': item['eng'], 'c': item['cym']
+                           })
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
     return Response(status=200)
 
 
@@ -461,8 +536,12 @@ def delete_counties():  # pragma: no cover
         return Response(status=403)
 
     cursor = connect()
-    cursor.execute('DELETE FROM COUNTIES')
-    complete(cursor)
+    try:
+        cursor.execute('DELETE FROM COUNTIES')
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
     return Response(status=200)
 
 
@@ -478,20 +557,33 @@ def complete(cursor):
     cursor.close()
     cursor.connection.close()
 
-#clear the results table
+
+def rollback(cursor):
+    cursor.connection.rollback()
+    cursor.close()
+    cursor.connection.close()
+
+
+# clear the results table
 @app.route('/results', methods=['DELETE'])
 def delete_results():  # pragma: no cover
     if not app.config['ALLOW_DEV_ROUTES']:
         return Response(status=403)
     cursor = connect()
-    cursor.execute('DELETE FROM RESULTS')
-    complete(cursor)
+    try:
+        cursor.execute('DELETE FROM RESULTS')
+        complete(cursor)
+    except:
+        cursor.r
+        raise
+
     return Response(status=200)
 
-#insert into the results table
+
+# insert into the results table
 @app.route('/results', methods=['POST'])
 def load_results():
-    print("Calling load results")
+    logging.debug("Calling load results")
     if not app.config['ALLOW_DEV_ROUTES']:
         return Response(status=403)
 
@@ -501,7 +593,7 @@ def load_results():
     json_data = request.get_json(force=True)
     print("here")
 
-    #go and get some genuine landcharges.request.ids to feed into the results table
+    # go and get some genuine landcharges.request.ids to feed into the results table
     id_count = str(len(json_data))
     print("id_count " + id_count)
     response = requests.get(app.config['LAND_CHARGES_URI'] + '/request_ids/' + id_count)
@@ -509,21 +601,27 @@ def load_results():
     id_list = json.loads(response.content.decode('utf-8'))
     print("id list " + str(len(id_list)))
     cursor = connect()
-    ctr = 0
-    print("id number 1 is " + str(id_list[0]['request_id']))
-    for item in json_data:
+    try:
+        ctr = 0
+        print("id number 1 is " + str(id_list[0]['request_id']))
+        for item in json_data:
 
-        cursor.execute('INSERT INTO results (request_id, print_status, res_type) ' +
-        ' VALUES (%(request_id)s, %(print_status)s, %(res_type)s) ',
-                       {
-                           # 'request_id': item['request_id'],
-                           'request_id': id_list[ctr]['request_id'],
-                           'print_status': item['print_status'],
-                           'res_type': item['res_type']
-                       })
-        ctr = ctr+1
-    complete(cursor)
+            cursor.execute('INSERT INTO results (request_id, print_status, res_type) ' +
+                           ' VALUES (%(request_id)s, %(print_status)s, %(res_type)s) ',
+                           {
+                               # 'request_id': item['request_id'],
+                               'request_id': id_list[ctr]['request_id'],
+                               'print_status': item['print_status'],
+                               'res_type': item['res_type']
+                           })
+            ctr += 1
+            complete(cursor)
+    except:
+        rollback(cursor)
+        raise
+
     return Response(status=200)
+
 
 # update the status of the result to show it has been printed.
 @app.route('/results/<result_id>/<result_status>', methods=['POST', 'GET'])
@@ -531,51 +629,62 @@ def set_result_status(result_id, result_status):
     if not app.config['ALLOW_DEV_ROUTES']:
         return Response(status=403)
     cursor = connect()
-    cursor.execute('UPDATE results set print_status = %(result_status)s WHERE id = %(result_id)s',
-                   {
-                       "result_status": result_status,
-                       "result_id": result_id}
-                   )
-    complete(cursor)
+    try:
+        cursor.execute('UPDATE results set print_status = %(result_status)s WHERE id = %(result_id)s',
+                       {
+                           "result_status": result_status,
+                           "result_id": result_id
+                       })
+
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
     return Response(status=200)
 
-#get details of the passed in result.id
-@app.route('/result/<id>', methods=["GET"])
-def get_result(id):
+
+# get details of the passed in result.id
+@app.route('/result/<result_id>', methods=["GET"])
+def get_result(result_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute("SELECT id, request_id, res_type " +
-                   "FROM results Where id = %(id)s ",
-                       {'id': id})
-    rows = cursor.fetchall()
-    print("row count = " + str(len(rows)) )
-    res_list = []
-    rowcount = 1
-    for row in rows:
-        job = {
-        'id': row['id'], 'request_id': row['request_id'], 'res_type': row['res_type']
-        }
-        rowcount = rowcount + 1
-        res_list.append(job)
-    complete(cursor)
-    print("returning res" + str(len(res_list)))
+    try:
+        cursor.execute("SELECT id, request_id, res_type FROM results Where id = %(id)s ",
+                       {'id': result_id})
+        rows = cursor.fetchall()
+        logging.debug("row count = " + str(len(rows)) )
+        res_list = []
+        rowcount = 1
+        for row in rows:
+            job = {
+                'id': row['id'],
+                'request_id': row['request_id'],
+                'res_type': row['res_type']
+            }
+            rowcount += 1
+            res_list.append(job)
+    finally:
+        complete(cursor)
+    logging.debug("returning res" + str(len(res_list)))
     return Response(json.dumps(res_list), status=200, mimetype='application/json')
 
 
-#get details of all results the are ready for printing
+# get details of all results the are ready for printing
 @app.route('/results', methods=["GET"])
 def get_results():
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute("SELECT id, request_id, res_type " +
-                   "FROM results Where print_status <> 'Y' ORDER BY res_type ")
-    rows = cursor.fetchall()
-    print("row count = " + str(len(rows)) )
-    res_list = []
-    rowcount = 1
-    for row in rows:
-        job = {
-        'id': row['id'], 'request_id': row['request_id'], 'res_type': row['res_type']#, 'key_no': row['key_no'],
-        }
-        rowcount = rowcount + 1
-        res_list.append(job)
-    complete(cursor)
+    try:
+        cursor.execute("SELECT id, request_id, res_type " +
+                       "FROM results Where print_status <> 'Y' ORDER BY res_type ")
+        rows = cursor.fetchall()
+        logging.debug("row count = " + str(len(rows)) )
+        res_list = []
+        rowcount = 1
+        for row in rows:
+            job = {
+                'id': row['id'], 'request_id': row['request_id'], 'res_type': row['res_type']#, 'key_no': row['key_no'],
+            }
+            rowcount += 1
+            res_list.append(job)
+    finally:
+        complete(cursor)
     return Response(json.dumps(res_list), status=200, mimetype='application/json')

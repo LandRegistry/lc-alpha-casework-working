@@ -3,6 +3,7 @@ import os
 
 class Config(object):
     DEBUG = False
+    APPLICATION_NAME = 'lc-casework-api'
 
 
 class DevelopmentConfig(Config):
@@ -17,6 +18,12 @@ class DevelopmentConfig(Config):
     LEGACY_ADAPTER_URI = 'http://localhost:5007'
     IMAGE_DIRECTORY = '/home/vagrant/interim/'
     ALLOW_DEV_ROUTES = True
+    APPLICATION_NAME = 'lc-casework-api'
+    MQ_USERNAME = "mquser"
+    MQ_PASSWORD = "mqpassword"
+    MQ_HOSTNAME = "localhost"
+    MQ_PORT = "5672"
+    ERROR_QUEUE_NAME = "errors"
 
 
 class PreviewConfig(Config):
@@ -30,3 +37,9 @@ class PreviewConfig(Config):
     DOCUMENT_API_URI = 'http://localhost:5014'
     IMAGE_DIRECTORY = "~/interim/"
     ALLOW_DEV_ROUTES = True
+    APPLICATION_NAME = 'lc-casework-api'
+    MQ_USERNAME = "mquser"
+    MQ_PASSWORD = "mqpassword"
+    MQ_HOSTNAME = "localhost"
+    MQ_PORT = "5672"
+    ERROR_QUEUE_NAME = "errors"
