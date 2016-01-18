@@ -8,7 +8,7 @@ import psycopg2.extras
 import requests
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
-    amend_application, set_lock_ind, clear_lock_ind
+    amend_application, set_lock_ind, clear_lock_ind, insert_result_row
 from application.documents import get_document, get_image
 from application.error import raise_error
 import io
@@ -574,7 +574,7 @@ def delete_results():  # pragma: no cover
         cursor.execute('DELETE FROM RESULTS')
         complete(cursor)
     except:
-        cursor.r
+        rollback(cursor)
         raise
 
     return Response(status=200)
@@ -595,6 +595,9 @@ def load_results():
     id_count = str(len(json_data))
     response = requests.get(app.config['LAND_CHARGES_URI'] + '/request_ids/' + id_count)
     id_list = json.loads(response.content.decode('utf-8'))
+    if id_list is None:
+        print("no ids retrieved from the land charges uri, run casework-api/data/setup.rb after reset-data")
+        return Response(status=200)
     try:
         ctr = 0
         for item in json_data:
@@ -677,13 +680,7 @@ def get_results():
 def insert_result(request_id, result_type):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        cursor.execute("INSERT into results(request_id, res_type, print_status) values(%(request_id)s, %(res_type)s, " +
-            "%(print_status)s) ",
-                           {
-                               'request_id': request_id,
-                               'res_type': result_type,
-                               'print_status': "",
-                           })
+        insert_result_row(cursor, request_id, result_type)
         complete(cursor)
     except:
         rollback(cursor)

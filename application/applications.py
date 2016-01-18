@@ -139,16 +139,21 @@ def complete_application(cursor, appn_id, data):
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
     response = requests.post(url, data=json.dumps(data), headers=headers)
-    print(data)
 
-    print('this is the resonse in casework-api', response.status_code)
     if response.status_code != 200:
         return response
 
-    # Archive document
     regns = response.json()
-    print(regns)
 
+
+    # Insert print job
+    try:
+        insert_result_row(cursor, regns['request_id'],'registration')
+    except:
+        #TODO error inserting print job row
+        pass
+
+    # Archive document
     document_id = data['application_data']['document_id']
     pages = get_document(cursor, document_id)
 
@@ -188,3 +193,17 @@ def bulk_insert_applications(cursor, data):  # pragma: no cover
                                         "status": "new", "work_type": item['work_type']})
         items.append(cursor.fetchone()[0])
     return items
+
+
+#insert a print job row on the result table
+def insert_result_row(cursor, request_id, result_type):
+    try:
+        cursor.execute("INSERT into results(request_id, res_type, print_status) values(%(request_id)s, %(res_type)s, " +
+                   "%(print_status)s) ",
+                   {
+                       'request_id': request_id,
+                        'res_type': result_type,
+                        'print_status': "",
+                    })
+    except:
+       raise
