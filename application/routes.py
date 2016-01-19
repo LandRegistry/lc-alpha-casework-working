@@ -609,19 +609,19 @@ def load_results():
 
 
 # update the status of the result to show it has been printed.
-@app.route('/results/<result_id>/<result_status>', methods=['POST', 'GET'])
-def set_result_status(result_id, result_status):
-    if not app.config['ALLOW_DEV_ROUTES']:
-        return Response(status=403)
+@app.route('/results/<result_id>', methods=['POST'])
+def set_result_status(result_id):
     cursor = connect()
+    json_data = request.get_json(force=True)
+    
     try:
-        cursor.execute('UPDATE results set print_status = %(result_status)s WHERE id = %(result_id)s',
-                       {
-                           "result_status": result_status,
-                           "result_id": result_id
-                       })
-
-        complete(cursor)
+        if 'print_status' in json_data:
+            cursor.execute('UPDATE results set print_status = %(result_status)s WHERE id = %(result_id)s',
+                           {
+                               "result_status": json_data['print_status'],
+                               "result_id": result_id
+                           })
+            complete(cursor)
     except:
         rollback(cursor)
         raise
@@ -629,28 +629,26 @@ def set_result_status(result_id, result_status):
 
 
 # get details of the passed in result.id
-@app.route('/result/<result_id>', methods=["GET"])
+@app.route('/results/<result_id>', methods=["GET"])
 def get_result(result_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    job = None
+    
     try:
-        cursor.execute("SELECT id, request_id, res_type FROM results Where id = %(id)s ",
-                       {'id': result_id})
+        cursor.execute("SELECT id, request_id, res_type FROM results Where id = %(id)s", {'id': result_id})
         rows = cursor.fetchall()
-        logging.debug("row count = " + str(len(rows)) )
-        res_list = []
-        rowcount = 1
-        for row in rows:
+        
+        if len(rows) > 0:
             job = {
-                'id': row['id'],
-                'request_id': row['request_id'],
-                'res_type': row['res_type']
-            }
-            rowcount += 1
-            res_list.append(job)
+                'id': rows[0]['id'],
+                'request_id': rows[0]['request_id'],
+                'res_type': rows[0]['res_type']
+            }        
     finally:
         complete(cursor)
-    logging.debug("returning res" + str(len(res_list)))
-    return Response(json.dumps(res_list), status=200, mimetype='application/json')
+    if job is None:
+        return Response(status=404)
+    return Response(json.dumps(job), status=200, mimetype='application/json')
 
 
 # get details of all results the are ready for printing
