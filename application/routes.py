@@ -420,14 +420,16 @@ def get_counties_list():
 def get_complex_names(name):
     uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names/' + name
     response = requests.get(uri)
+    logging.info('GET {} -- {}'.format(uri, response))
     return Response(response.text, status=200, mimetype='application/json')
 
 
 @app.route('/complex_names/search', methods=['POST'])
 def get_complex_names_post():
     data = request.get_json(force=True)
-    uri = app.config['LEGACY_ADAPTER_URI'] + 'complex_names/search'
-    response = requests.post(uri, data=data, headers={'Content-Type': 'application/json'})
+    uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names/search'
+    response = requests.post(uri, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+    logging.info('POST {} -- {}'.format(uri, response))
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
