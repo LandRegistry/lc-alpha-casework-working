@@ -7,13 +7,15 @@ from datetime import datetime
 
 def insert_new_application(cursor, data):
     app_data = data['application_data']
+    delivery_method = data['delivery_method'] if 'delivery_method' in data else None
 
     cursor.execute("INSERT INTO pending_application (application_data, date_received, "
-                   "application_type, status, work_type) " +
-                   "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s) "
+                   "application_type, status, work_type, delivery_method) " +
+                   "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s, %(delivery)s) "
                    "RETURNING id", {"json": json.dumps(app_data), "date": data['date_received'],
                                     "type": data['application_type'],
-                                    "status": "new", "work_type": data['work_type']})
+                                    "status": "new", "work_type": data['work_type'],
+                                    "delivery": delivery_method})
     item_id = cursor.fetchone()[0]
     return item_id
 
@@ -186,11 +188,12 @@ def bulk_insert_applications(cursor, data):  # pragma: no cover
             "document_id": item['document_id']
         }
         cursor.execute("INSERT INTO pending_application (application_data, date_received, "
-                       "application_type, status, work_type) " +
-                       "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s) "
+                       "application_type, status, work_type, delivery_method) " +
+                       "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s, %(delivery)s) "
                        "RETURNING id", {"json": json.dumps(app_data), "date": item['date'],
                                         "type": item['application_type'],
-                                        "status": "new", "work_type": item['work_type']})
+                                        "status": "new", "work_type": item['work_type'],
+                                        "delivery": item['delivery_method']})
         items.append(cursor.fetchone()[0])
     return items
 
