@@ -28,18 +28,18 @@ def get_application_list(cursor, list_type):
         bank_regn_type = 'WO(B)'
 
     if list_type == 'all':
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to "
+        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to, delivery_method "
                        "FROM pending_application "
                        "WHERE lock_ind IS NULL "
                        "order by date_received desc")
     elif bank_regn_type != '':
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to "
+        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to, delivery_method "
                        "FROM pending_application "
                        "WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL "
                        "order by date_received desc",
                        {"bank_regn_type": bank_regn_type})
     else:
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to "
+        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to, delivery_method "
                        "FROM pending_application "
                        "WHERE work_type=%(list_type)s AND lock_ind IS NULL "
                        "order by date_received", {"list_type": list_type})
@@ -55,6 +55,7 @@ def get_application_list(cursor, list_type):
             "status": row['status'],
             "work_type": row['work_type'],
             "assigned_to": row['assigned_to'],
+            "delivery_method": row['delivery_method']
         }
         applications.append(result)
     return applications
