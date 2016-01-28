@@ -260,10 +260,10 @@ standard_data = [
     { "type" => "K15", "images" => ["img64_1.tiff"] },
     { "type" => "K16", "images" => ["img65_1.tiff"] },
     { "type" => "PA(B)", "images" => ["img66_1.tiff"] },
-    { "type" => "K1", "images" => ["img_67_1.jpg"] },
-    { "type" => "K2", "images" => ["img_68_1.jpg"] },
-    { "type" => "K3", "images" => ["img69_1.jpg"] },
-    { "type" => "K4", "images" => ["img70_1.jpg"] },
+    { "type" => "K1", "images" => ["img_67_1.tiff"] },
+    { "type" => "K2", "images" => ["img_68_1.tiff"] },
+    { "type" => "K3", "images" => ["img69_1.tiff"] },
+    { "type" => "K4", "images" => ["img70_1.tiff"] },
 ]
 
 folder = File.dirname(__FILE__)
