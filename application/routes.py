@@ -402,19 +402,6 @@ def get_keyholder(key_number):
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
-@app.route('/counties', methods=['GET'])
-@cross_origin()
-def get_counties_list():
-    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    try:
-        cursor.execute("SELECT name FROM counties")
-        rows = cursor.fetchall()
-        counties = [row['name'] for row in rows]
-    finally:
-        complete(cursor)
-    return Response(json.dumps(counties), status=200, mimetype='application/json')
-
-
 @app.route('/complex_names/<name>', methods=['GET'])
 @cross_origin()
 def get_complex_names(name):
