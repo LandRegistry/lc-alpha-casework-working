@@ -403,6 +403,22 @@ def get_keyholder(key_number):
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
+@app.route('/counties/', methods=['GET'])
+@cross_origin()
+def get_counties_list():
+    params = ""
+    if 'welsh' in request.args:
+        if request.args['welsh'] == "yes":
+            params = "?welsh=yes"
+    else:
+        params = "?welsh=no"
+
+    url = app.config['BANKRUPTCY_DATABASE_URL'] + '/counties' + params
+    data = requests.get(url)
+    return Response(data, status=200, mimetype='application/json')
+
+
+
 @app.route('/complex_names/<name>', methods=['GET'])
 @cross_origin()
 def get_complex_names(name):
