@@ -413,7 +413,7 @@ def get_counties_list():
     else:
         params = "?welsh=no"
 
-    url = app.config['BANKRUPTCY_DATABASE_URL'] + '/counties' + params
+    url = app.config['LAND_CHARGES_URI'] + '/counties' + params
     data = requests.get(url)
     return Response(data, status=200, mimetype='application/json')
 
