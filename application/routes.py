@@ -463,7 +463,8 @@ def post_search():
 
     cursor = connect()
     res_type = 'search'  # TODO: also 'search nr' ????
-    insert_result_row(cursor, response_data['request_id'], res_type)
+    for id in response_data:
+        insert_result_row(cursor, id, res_type)
     complete(cursor)
 
     return Response(response.text, status=response.status_code, mimetype='application/json')
