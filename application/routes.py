@@ -462,8 +462,11 @@ def post_search():
     response_data = response.json()
 
     cursor = connect()
-    res_type = 'search'  # TODO: also 'search nr' ????
     for id in response_data:
+        uri = app.config['LAND_CHARGES_URI'] + '/search_type/'+str(id)
+        response = requests.get(uri)
+        resp_data = response.json()
+        res_type = resp_data['search_type']
         insert_result_row(cursor, id, res_type)
     complete(cursor)
 
