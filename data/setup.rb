@@ -254,7 +254,7 @@ standard_data = [
     { "type" => "PA(B)", "images" => ["img58_1.tiff"] },
     { "type" => "Unknown", "images" => ["img59_1.tiff"] },
     { "type" => "K15", "images" => ["img60_1.tiff"] },
-    { "type" => "K15", "images" => ["img61_1.tiff"] },
+    { "type" => "K15", "images" => ["img61_1.tiff", "img62_1.tiff"] },
     { "type" => "K16", "images" => ["img62_1.tiff"] },
     { "type" => "K16", "images" => ["img63_1.tiff"] },
     { "type" => "K15", "images" => ["img64_1.tiff"] },
