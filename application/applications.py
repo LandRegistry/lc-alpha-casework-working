@@ -28,21 +28,24 @@ def get_application_list(cursor, list_type):
         bank_regn_type = 'WO(B)'
 
     if list_type == 'all':
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to, delivery_method "
-                       "FROM pending_application "
-                       "WHERE lock_ind IS NULL "
-                       "order by date_received desc")
+        cursor.execute(" SELECT id, date_received, application_data, application_type, status, work_type, "
+                       " assigned_to, delivery_method "
+                       " FROM pending_application "
+                       " WHERE lock_ind IS NULL "
+                       " order by date_received desc")
     elif bank_regn_type != '':
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to, delivery_method "
-                       "FROM pending_application "
-                       "WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL "
-                       "order by date_received desc",
+        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                       " assigned_to, delivery_method "
+                       " FROM pending_application "
+                       " WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL "
+                       " order by date_received desc",
                        {"bank_regn_type": bank_regn_type})
     else:
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to, delivery_method "
-                       "FROM pending_application "
-                       "WHERE work_type=%(list_type)s AND lock_ind IS NULL "
-                       "order by date_received", {"list_type": list_type})
+        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                       " assigned_to, delivery_method "
+                       " FROM pending_application "
+                       " WHERE work_type=%(list_type)s AND lock_ind IS NULL "
+                       " order by date_received", {"list_type": list_type})
     rows = cursor.fetchall()
     applications = []
 
@@ -147,13 +150,11 @@ def complete_application(cursor, appn_id, data):
         return response
 
     regns = response.json()
-
-
     # Insert print job
     try:
-        insert_result_row(cursor, regns['request_id'],'registration')
+        insert_result_row(cursor, regns['request_id'], 'registration')
     except:
-        #TODO error inserting print job row
+        # TODO error inserting print job row
         pass
 
     # Archive document
@@ -199,15 +200,16 @@ def bulk_insert_applications(cursor, data):  # pragma: no cover
     return items
 
 
-#insert a print job row on the result table
+# insert a print job row on the result table
 def insert_result_row(cursor, request_id, result_type):
     try:
-        cursor.execute("INSERT into results(request_id, res_type, print_status) values(%(request_id)s, %(res_type)s, " +
-                   "%(print_status)s) ",
-                   {
-                       'request_id': request_id,
-                        'res_type': result_type,
-                        'print_status': "",
-                    })
+        cursor.execute("INSERT into results(request_id, res_type, print_status) values(%(request_id)s, %(res_type)s, "
+                       " %(print_status)s) ",
+                       {
+                           'request_id': request_id,
+                           'res_type': result_type,
+                           'print_status': "",
+                       })
     except:
-       raise
+        raise
+    return "success"
