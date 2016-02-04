@@ -418,6 +418,14 @@ def get_counties_list():
     return Response(data, status=200, mimetype='application/json')
 
 
+@app.route('/county/<county_name>', methods=['GET'])
+@cross_origin()
+def get_translated_county(county_name):
+
+    url = app.config['LAND_CHARGES_URI'] + '/county/' + county_name
+    data = requests.get(url)
+    return Response(data, status=200, mimetype='application/json')
+
 
 @app.route('/complex_names/<name>', methods=['GET'])
 @cross_origin()
