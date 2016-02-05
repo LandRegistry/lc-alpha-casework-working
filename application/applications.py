@@ -2,6 +2,7 @@ import json
 from application import app
 from application.documents import get_document, get_image
 import requests
+import logging
 from datetime import datetime
 
 
@@ -141,6 +142,8 @@ def complete_application(cursor, appn_id, data):
     # Submit registration
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
+    logging.debug("Completing:")
+    logging.debug(json.dumps(data))
     response = requests.post(url, data=json.dumps(data), headers=headers)
 
     if response.status_code != 200:
@@ -152,28 +155,32 @@ def complete_application(cursor, appn_id, data):
     # Insert print job
     try:
         insert_result_row(cursor, regns['request_id'],'registration')
+        logging.info("Result saved")
     except:
         #TODO error inserting print job row
+        logging.error("Failed to insert row")
         pass
 
     # Archive document
     document_id = data['application_data']['document_id']
     pages = get_document(cursor, document_id)
 
-    for regn in regns['new_registrations']:
-        number = regn['number']
-        date = regn['date']
-        for page in pages:
-            image = get_image(cursor, document_id, page)
-            url = "{}/images/{}/{}/{}".format(app.config['LEGACY_ADAPTER_URI'],
-                                              date,
-                                              number,
-                                              'A4')
-            headers = {'Content-Type': image['mimetype']}
-            doc_response = requests.put(url, data=image['bytes'], headers=headers)
-            if doc_response.status_code != 200:
-                # TODO: error!
-                pass
+    logging.warn("TEMPORARY LEGDB SUPRESSION")
+    if False:
+        for regn in regns['new_registrations']:
+            number = regn['number']
+            date = regn['date']
+            for page in pages:
+                image = get_image(cursor, document_id, page)
+                url = "{}/images/{}/{}/{}".format(app.config['LEGACY_ADAPTER_URI'],
+                                                  date,
+                                                  number,
+                                                  'A4')
+                headers = {'Content-Type': image['mimetype']}
+                doc_response = requests.put(url, data=image['bytes'], headers=headers)
+                if doc_response.status_code != 200:
+                    # TODO: error!
+                    pass
 
     # Delete work-item
     delete_application(cursor, appn_id)
