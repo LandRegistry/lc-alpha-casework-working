@@ -15,6 +15,8 @@ from application.error import raise_error
 import io
 from application.ocr import recognise
 import traceback
+from PIL import Image
+import os
 
 
 valid_types = ['all', 'pab', 'wob',
@@ -477,6 +479,23 @@ def post_search():
         res_type = resp_data['search_type']
         insert_result_row(cursor, id, res_type)
     complete(cursor)
+
+    return Response(response.text, status=response.status_code, mimetype='application/json')
+
+
+@app.route('/office_copy', methods=['GET'])
+def get_office_copy():
+    class_of_charge = request.args['class']
+    reg_no = request.args['reg_no']
+    date = request.args['date']
+
+    uri = app.config['LAND_CHARGES_URI'] + '/office_copy' + '?class=' + class_of_charge + '&reg_no=' + reg_no + '&date=' + date
+    response = requests.get(uri, headers={'Content-Type': 'application/json'})
+    logging.info('GET {} -- {}'.format(uri, response.text))
+    # dir_ = os.path.dirname(__file__)
+    # tiff_image = open(os.path.join(dir_, 'images/test.tiff'), 'r').read()
+    # im = Image.open('/images/test.tiff')
+    # print(im.format, im.size, im.mode)
 
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
