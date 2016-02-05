@@ -3,7 +3,9 @@ from application import app
 from application.documents import get_document, get_image
 import requests
 import logging
+import re
 from datetime import datetime
+import logging
 
 
 def insert_new_application(cursor, data):
@@ -29,21 +31,24 @@ def get_application_list(cursor, list_type):
         bank_regn_type = 'WO(B)'
 
     if list_type == 'all':
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to, delivery_method "
-                       "FROM pending_application "
-                       "WHERE lock_ind IS NULL "
-                       "order by date_received desc")
+        cursor.execute(" SELECT id, date_received, application_data, application_type, status, work_type, "
+                       " assigned_to, delivery_method "
+                       " FROM pending_application "
+                       " WHERE lock_ind IS NULL "
+                       " order by date_received desc")
     elif bank_regn_type != '':
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to, delivery_method "
-                       "FROM pending_application "
-                       "WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL "
-                       "order by date_received desc",
+        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                       " assigned_to, delivery_method "
+                       " FROM pending_application "
+                       " WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL "
+                       " order by date_received desc",
                        {"bank_regn_type": bank_regn_type})
     else:
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, assigned_to, delivery_method "
-                       "FROM pending_application "
-                       "WHERE work_type=%(list_type)s AND lock_ind IS NULL "
-                       "order by date_received", {"list_type": list_type})
+        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                       " assigned_to, delivery_method "
+                       " FROM pending_application "
+                       " WHERE work_type=%(list_type)s AND lock_ind IS NULL "
+                       " order by date_received", {"list_type": list_type})
     rows = cursor.fetchall()
     applications = []
 
@@ -138,28 +143,111 @@ def amend_application(cursor, appn_id, data):
     return regns
 
 
+def create_lc_registration(data):
+    coc_lut = {
+        'C(I)': 'C1',
+        'C(II)': 'C2',
+        'C(III)': 'C3',
+        'C(IV)': 'C4',
+        'D(I)': 'D1',
+        'D(II)': 'D2',
+        'D(III)': 'D3',
+    }
+
+    c = data['lc_register_details']['class']
+    if c in coc_lut:
+        c = coc_lut[c]
+    else:
+        c = re.sub("[\(\)]", "", c)
+
+    registration = {
+        "parties": [],
+        "class_of_charge": c,
+        "applicant": {
+            "name": data['customer_name'],
+            "address": data['customer_address'],
+            "key_number": data["key_number"],
+            "reference": data['application_ref']
+        }
+    }
+
+    party = {
+        "type": "Estate Owner",
+        "names": []
+    }
+
+    name_data = data['lc_register_details']["estate_owner"]
+    name = {
+        "type": name_data['estate_owner_ind']
+    }
+
+    if name['type'] == 'Private Individual':
+        name['private'] = {
+            'forenames': name_data['private']['forenames'],
+            'surname': name_data['private']['surname']
+        }
+    elif name['type'] == "County Council" or name['type'] == "Parish Council" or name['type'] == "Other Council":
+        name['local'] ={
+            'name': name_data['local']['name'],
+            'area': name_data['local']['area']
+        }
+    elif name['type'] == "Development Corporation" or name['type'] == "Other":
+        name['other'] = name_data['other']
+    elif name['type'] == "Limited Company":
+        name['company'] = name_data['company']
+    elif name['type'] == "Complex Name":
+        name['complex'] = {
+            'name': name_data['complex']['name'],
+            'number': name_data['complex']['number']
+        }
+    else:
+        raise RuntimeError("Unexpected name type: {}".format(name['type']))
+
+    party['names'].append(name)
+    registration['parties'].append(party)
+
+    if 'additional_info' in data:
+        data['additional_information'] = data['additional_info']
+
+    registration['particulars'] = {
+        "counties": data['lc_register_details']['county'],
+        "district": data['lc_register_details']['district'],
+        "description": data['lc_register_details']['short_description']
+    }
+    return registration
+
+
+#{"private": {"forenames": ["Bob"], "surname": "Howard"}, "complex": {"number": 0, "name": ""},
+# "estate_owner_ind": "Private Individual", "company": "", "local": {"area": "", "name": ""}, "other": ""},
+
+#"application_ref": "reference 11", "document_id": 66, "class_of_charge": "New Registration",
+# "customer_name": "Mr Conveyancer", "application_data": {"document_id": 66}, "appn_id": "2271", "form": "K1",
+# "residence_withheld": false, "status": "new", "date_received": "2015-11-05 14:01:57",
+# "customer_address": "2 New Street", "date_of_birth": "1980-01-01", "date": "2016-02-04",
+# "lc_register_details": {"county": ["Devon"], "class": "C(I)",
+# "estate_owner":
+# "additional_info": "dsfsd df sd", "estate_owner_ind": "Private Individual", "occupation": "Civl Servant",
+# "district": "Nine", "short_description": "Wibble"}, "key_number": "244095", "assigned_to": null,
+# "application_type": "K1", "work_type": "lc_regn"}
+
 def complete_application(cursor, appn_id, data):
     # Submit registration
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
-    logging.debug("Completing:")
-    logging.debug(json.dumps(data))
-    response = requests.post(url, data=json.dumps(data), headers=headers)
 
+
+
+    response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
     if response.status_code != 200:
-        return response
+        logging.error(response.text)
+        raise RuntimeError("Unexpected response from /registrations: {}".format(response.status_code))
 
     regns = response.json()
 
-
     # Insert print job
-    try:
-        insert_result_row(cursor, regns['request_id'],'registration')
-        logging.info("Result saved")
-    except:
-        #TODO error inserting print job row
-        logging.error("Failed to insert row")
-        pass
+    insert_result_row(cursor, regns['request_id'], 'registration')
+    # TODO error handling on inserting print job row
+
 
     # Archive document
     document_id = data['application_data']['document_id']
@@ -206,15 +294,16 @@ def bulk_insert_applications(cursor, data):  # pragma: no cover
     return items
 
 
-#insert a print job row on the result table
+# insert a print job row on the result table
 def insert_result_row(cursor, request_id, result_type):
     try:
-        cursor.execute("INSERT into results(request_id, res_type, print_status) values(%(request_id)s, %(res_type)s, " +
-                   "%(print_status)s) ",
-                   {
-                       'request_id': request_id,
-                        'res_type': result_type,
-                        'print_status': "",
-                    })
+        cursor.execute("INSERT into results(request_id, res_type, print_status) values(%(request_id)s, %(res_type)s, "
+                       " %(print_status)s) ",
+                       {
+                           'request_id': request_id,
+                           'res_type': result_type,
+                           'print_status': "",
+                       })
     except:
-       raise
+        raise
+    return "success"

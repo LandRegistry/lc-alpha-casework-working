@@ -6,6 +6,7 @@ import logging
 import psycopg2
 import psycopg2.extras
 import requests
+from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
     amend_application, set_lock_ind, clear_lock_ind, insert_result_row
@@ -402,6 +403,30 @@ def get_keyholder(key_number):
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
+@app.route('/counties/', methods=['GET'])
+@cross_origin()
+def get_counties_list():
+    params = ""
+    if 'welsh' in request.args:
+        if request.args['welsh'] == "yes":
+            params = "?welsh=yes"
+    else:
+        params = "?welsh=no"
+
+    url = app.config['LAND_CHARGES_URI'] + '/counties' + params
+    data = requests.get(url)
+    return Response(data, status=200, mimetype='application/json')
+
+
+@app.route('/county/<county_name>', methods=['GET'])
+@cross_origin()
+def get_translated_county(county_name):
+
+    url = app.config['LAND_CHARGES_URI'] + '/county/' + county_name
+    data = requests.get(url)
+    return Response(data, status=200, mimetype='application/json')
+
+
 @app.route('/complex_names/<name>', methods=['GET'])
 @cross_origin()
 def get_complex_names(name):
@@ -417,6 +442,42 @@ def get_complex_names_post():
     uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names/search'
     response = requests.post(uri, data=json.dumps(data), headers={'Content-Type': 'application/json'})
     logging.info('POST {} -- {}'.format(uri, response))
+    return Response(response.text, status=response.status_code, mimetype='application/json')
+
+
+@app.route('/searches', methods=['POST'])
+def post_search():
+    data = request.get_json(force=True)
+
+    logging.debug(json.dumps(data))
+
+    today = datetime.now().strftime('%Y-%m-%d')
+    date_uri = app.config['LEGACY_ADAPTER_URI'] + '/dates/' + today
+    date_response = requests.get(date_uri)
+
+    if date_response.status_code != 200:
+        raise RuntimeError("Unexpected return from legacy_adapter/dates: " + str(date_response.status_code))
+
+    date_info = date_response.json()
+    data['expiry_date'] = date_info['search_expires']
+    data['search_date'] = date_info['prev_working']
+
+    uri = app.config['LAND_CHARGES_URI'] + '/searches'
+    response = requests.post(uri, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+    logging.info('POST {} -- {}'.format(uri, response.text))
+
+    # store result
+    response_data = response.json()
+
+    cursor = connect()
+    for id in response_data:
+        uri = app.config['LAND_CHARGES_URI'] + '/search_type/'+str(id)
+        response = requests.get(uri)
+        resp_data = response.json()
+        res_type = resp_data['search_type']
+        insert_result_row(cursor, id, res_type)
+    complete(cursor)
+
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
