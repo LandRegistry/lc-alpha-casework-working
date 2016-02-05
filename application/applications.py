@@ -212,7 +212,8 @@ def create_lc_registration(data):
     registration['particulars'] = {
         "counties": data['lc_register_details']['county'],
         "district": data['lc_register_details']['district'],
-        "description": data['lc_register_details']['short_description']
+        "description": data['lc_register_details']['short_description'],
+        "priority_notice": data['lc_register_details']['priority_notice']
     }
     return registration
 
@@ -235,7 +236,7 @@ def complete_application(cursor, appn_id, data):
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
 
-
+    print(data)
 
     response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
     if response.status_code != 200:
