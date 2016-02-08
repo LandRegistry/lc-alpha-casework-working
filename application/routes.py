@@ -15,7 +15,7 @@ from application.error import raise_error
 import io
 from application.ocr import recognise
 import traceback
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont, TiffImagePlugin
 import os
 
 
@@ -489,16 +489,86 @@ def get_office_copy():
     reg_no = request.args['reg_no']
     date = request.args['date']
 
-    uri = app.config['LAND_CHARGES_URI'] + '/office_copy' + '?class=' + class_of_charge + '&reg_no=' + reg_no + '&date=' + date
+    uri = app.config['LAND_CHARGES_URI'] + '/office_copy' + '?class=' + class_of_charge + '&reg_no=' + reg_no + \
+          '&date=' + date
     response = requests.get(uri, headers={'Content-Type': 'application/json'})
     logging.info('GET {} -- {}'.format(uri, response.text))
-    # dir_ = os.path.dirname(__file__)
-    # tiff_image = open(os.path.join(dir_, 'images/test.tiff'), 'r').read()
-    # im = Image.open('/images/test.tiff')
-    # print(im.format, im.size, im.mode)
+    size = (992, 1430)
+    clWhite = (255, 255, 255)
+    clBlack = (0, 0, 0)
+    clGrey = (178, 178, 178)
+    arial = 'arial.ttf'
+    arialbold = 'arialbd.ttf'
+    im = Image.new('RGB', size, clWhite)
+    draw = ImageDraw.Draw(im)
+    cursor_pos = 50
+    draw_text(draw, (120, cursor_pos), 'Application for Registration of Petition in Bankruptcy', arialbold, 32, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'This is an official copy of the data provided by the Insolvency',
+              arial, 28, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (200, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, 28, clBlack)
+    cursor_pos += 80
+    draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, 22, clBlack)
+    cursor_pos += 30
+    draw.line((100,cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
+    cursor_pos += 30
+    draw_text(draw, (150, cursor_pos), 'Reference: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'Key Number: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'Date: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (100, cursor_pos), 'Particulars of Debtor:', arialbold, 22, clBlack)
+    cursor_pos += 30
+    draw.line((100, cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
+    cursor_pos += 30
+    draw_text(draw, (150, cursor_pos), 'Name: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'Date of Birth: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'Gender: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'Residence: ', arial, 22, clBlack)
+    cursor_pos += 150
+    draw_text(draw, (150, cursor_pos), 'Business Address: ', arial, 22, clBlack)
+    cursor_pos += 50
+    draw_text(draw, (150, cursor_pos), 'Investment Property: ', arial, 22, clBlack)
+    cursor_pos = 1250
+    left_pos = 50
+    draw_text(draw, (left_pos, cursor_pos), 'Land Registry', arial, 12, clGrey)
+    cursor_pos += 20
+    draw_text(draw, (left_pos, cursor_pos), 'Land Charges Department', arial, 12, clGrey)
+    cursor_pos += 20
+    draw_text(draw, (left_pos, cursor_pos), 'Seaton Court', arial, 12, clGrey)
+    cursor_pos += 20
+    draw_text(draw, (left_pos, cursor_pos), '2 William Prance Road', arial, 12, clGrey)
+    cursor_pos += 20
+    draw_text(draw, (left_pos, cursor_pos), 'Plymouth', arial, 12, clGrey)
+    cursor_pos += 20
+    draw_text(draw, (left_pos, cursor_pos), 'PL6 5WS', arial, 12, clGrey)
+    del draw
+    image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/images')
+    im.save(os.path.join(image_path, 'test.tiff'), 'tiff', resolution=120.0)
+    im.save(os.path.join(image_path, 'test.pdf'), 'PDF', resolution=120.0)
+    TiffImagePlugin.WRITE_LIBTIFF = True
+    im.save(os.path.join(image_path, 'compressedtiff.tiff'), compression = "tiff_lzw", resolution=120.0)
+    TiffImagePlugin.WRITE_LIBTIFF = False
+    response = send_file(os.path.join(image_path, 'compressedtiff.tiff'), as_attachment=True, attachment_filename='mytiff.tiff')
+    return response
 
-    return Response(response.text, status=response.status_code, mimetype='application/json')
 
+def draw_text(canvas, text_pos, text, font_name, font_size, font_color):
+    fonts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/static/fonts')
+    fnt = ImageFont.truetype(os.path.join(fonts_path, font_name), font_size)
+    canvas.text(text_pos, text, font_color, font=fnt )
+    return "ok"
 
 # ========= Dev Routes ==============
 
