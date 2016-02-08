@@ -488,11 +488,17 @@ def get_office_copy():
     class_of_charge = request.args['class']
     reg_no = request.args['reg_no']
     date = request.args['date']
+    if 'pdf' in request.args:
+        return_pdf = True
+    else:
+        return_pdf = False
+
 
     uri = app.config['LAND_CHARGES_URI'] + '/office_copy' + '?class=' + class_of_charge + '&reg_no=' + reg_no + \
           '&date=' + date
     response = requests.get(uri, headers={'Content-Type': 'application/json'})
     logging.info('GET {} -- {}'.format(uri, response.text))
+    data = json.loads(response.text)
     size = (992, 1430)
     clWhite = (255, 255, 255)
     clBlack = (0, 0, 0)
@@ -507,33 +513,52 @@ def get_office_copy():
     draw_text(draw, (150, cursor_pos), 'This is an official copy of the data provided by the Insolvency',
               arial, 28, clBlack)
     cursor_pos += 30
+
     draw_text(draw, (200, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, 28, clBlack)
     cursor_pos += 80
     draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, 22, clBlack)
     cursor_pos += 30
     draw.line((100,cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
     cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Reference: ', arial, 22, clBlack)
+    label_pos = 150
+    data_pos = 400
+    draw_text(draw, (label_pos, cursor_pos), 'Reference: ', arial, 22, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['application_ref'], arial, 22, clBlack)
     cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Key Number: ', arial, 22, clBlack)
+    draw_text(draw, (label_pos, cursor_pos), 'Key Number: ' , arial, 22, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['key_number'], arial, 22, clBlack)
     cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Date: ', arial, 22, clBlack)
+    draw_text(draw, (label_pos, cursor_pos), 'Date: ', arial, 22, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['application_date'], arial, 22, clBlack)
     cursor_pos += 50
     draw_text(draw, (100, cursor_pos), 'Particulars of Debtor:', arialbold, 22, clBlack)
+
     cursor_pos += 30
     draw.line((100, cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
     cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Name: ', arial, 22, clBlack)
+    draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, 22, clBlack)
+    if 'debtor_names' in data:
+        for debtor_name in data['debtor_names']:
+            debtor_forenames = ""
+            for forenames in debtor_name['forenames']:
+                debtor_forenames += forenames + " "
+
+            draw_text(draw, (data_pos, cursor_pos), debtor_forenames + " " + debtor_name['surname'], arial, 22, clBlack)
+
     cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
+    draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
     cursor_pos += 50
     draw_text(draw, (150, cursor_pos), 'Date of Birth: ', arial, 22, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['date_of_birth'], arial, 22, clBlack)
     cursor_pos += 50
     draw_text(draw, (150, cursor_pos), 'Gender: ', arial, 22, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['gender'], arial, 22, clBlack)
     cursor_pos += 50
     draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, 22, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, 22, clBlack)
     cursor_pos += 50
     draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, 22, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, 22, clBlack)
     cursor_pos += 50
     draw_text(draw, (150, cursor_pos), 'Residence: ', arial, 22, clBlack)
     cursor_pos += 150
@@ -556,11 +581,16 @@ def get_office_copy():
     del draw
     image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/images')
     im.save(os.path.join(image_path, 'test.tiff'), 'tiff', resolution=120.0)
-    im.save(os.path.join(image_path, 'test.pdf'), 'PDF', resolution=120.0)
+    im.save(os.path.join(image_path, 'output.pdf'), 'PDF', resolution=120.0)
     TiffImagePlugin.WRITE_LIBTIFF = True
-    im.save(os.path.join(image_path, 'compressedtiff.tiff'), compression = "tiff_lzw", resolution=120.0)
+    im.save(os.path.join(image_path, 'output.tiff'), compression = "tiff_lzw", resolution=120.0)
     TiffImagePlugin.WRITE_LIBTIFF = False
-    response = send_file(os.path.join(image_path, 'compressedtiff.tiff'), as_attachment=True, attachment_filename='mytiff.tiff')
+    if return_pdf:
+        response = send_file(os.path.join(image_path, 'output.pdf'), as_attachment=False,
+                             attachment_filename='output.pdf')
+    else:
+        response = send_file(os.path.join(image_path, 'output.tiff'), as_attachment=True,
+                             attachment_filename='output.tiff')
     return response
 
 
