@@ -212,9 +212,12 @@ def create_lc_registration(data):
     registration['particulars'] = {
         "counties": data['lc_register_details']['county'],
         "district": data['lc_register_details']['district'],
-        "description": data['lc_register_details']['short_description'],
-        "priority_notice": data['lc_register_details']['priority_notice']
+        "description": data['lc_register_details']['short_description']
     }
+
+    if data['lc_register_details']['priority_notice'] != '':
+        registration['particulars']['priority_notice'] = data['lc_register_details']['priority_notice']
+
     return registration
 
 
