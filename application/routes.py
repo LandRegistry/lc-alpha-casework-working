@@ -508,13 +508,13 @@ def get_office_copy():
     im = Image.new('RGB', size, clWhite)
     draw = ImageDraw.Draw(im)
     cursor_pos = 50
-    draw_text(draw, (120, cursor_pos), 'Application for Registration of Petition in Bankruptcy', arialbold, 32, clBlack)
+    draw_text(draw, (140, cursor_pos), 'Application for Registration of Petition in Bankruptcy', arialbold, 28, clBlack)
     cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'This is an official copy of the data provided by the Insolvency',
-              arial, 28, clBlack)
+    draw_text(draw, (160, cursor_pos), 'This is an official copy of the data provided by the Insolvency',
+              arial, 24, clBlack)
     cursor_pos += 30
 
-    draw_text(draw, (200, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, 28, clBlack)
+    draw_text(draw, (200, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, 24, clBlack)
     cursor_pos += 80
     draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, 22, clBlack)
     cursor_pos += 30
@@ -535,18 +535,26 @@ def get_office_copy():
 
     cursor_pos += 30
     draw.line((100, cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
-    cursor_pos += 30
-    draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, 22, clBlack)
+
     if 'debtor_names' in data:
+        name_count = 1
         for debtor_name in data['debtor_names']:
+            if name_count == 1:
+                cursor_pos += 50
+                draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, 22, clBlack)
+            elif name_count == 2:
+                cursor_pos += 50
+                draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
+            else:
+                cursor_pos += 20
             debtor_forenames = ""
             for forenames in debtor_name['forenames']:
                 debtor_forenames += forenames + " "
-
+            debtor_forenames = debtor_forenames.strip()
             draw_text(draw, (data_pos, cursor_pos), debtor_forenames + " " + debtor_name['surname'], arial, 22, clBlack)
-
-    cursor_pos += 50
-    draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
+            name_count += 1
+    # cursor_pos += 50
+    # draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
     cursor_pos += 50
     draw_text(draw, (150, cursor_pos), 'Date of Birth: ', arial, 22, clBlack)
     draw_text(draw, (data_pos, cursor_pos), data['date_of_birth'], arial, 22, clBlack)
@@ -561,10 +569,24 @@ def get_office_copy():
     draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, 22, clBlack)
     cursor_pos += 50
     draw_text(draw, (150, cursor_pos), 'Residence: ', arial, 22, clBlack)
-    cursor_pos += 150
+    if data['residence_withheld'] == True:
+        draw_text(draw, (data_pos, cursor_pos), "DEBTORS ADDRESS IS STATED TO BE UNKNOWN", arial, 22, clBlack)
+    else: # print debtors addresses
+        for address in data['residence']:
+            for address_line in address['address_lines']:
+                draw_text(draw, (data_pos, cursor_pos), address_line, arial, 22, clBlack)
+                cursor_pos += 30
+            draw_text(draw, (data_pos, cursor_pos), address['county'], arial, 22, clBlack)
+            cursor_pos += 30
+            draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, 22, clBlack)
+    cursor_pos += 50
     draw_text(draw, (150, cursor_pos), 'Business Address: ', arial, 22, clBlack)
+    if 'business_address' in data:
+        draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, 22, clBlack)
     cursor_pos += 50
     draw_text(draw, (150, cursor_pos), 'Investment Property: ', arial, 22, clBlack)
+    if 'investment_property' in data:
+        draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, 22, clBlack)
     cursor_pos = 1250
     left_pos = 50
     draw_text(draw, (left_pos, cursor_pos), 'Land Registry', arial, 12, clGrey)
