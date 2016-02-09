@@ -505,33 +505,38 @@ def get_office_copy():
     clGrey = (178, 178, 178)
     arial = 'arial.ttf'
     arialbold = 'arialbd.ttf'
+    fs_main = 28
+    fs_sub = 24
+    fs_sub_title = 20
+    fs_text = 16
+    fs_footer = 12
+
     im = Image.new('RGB', size, clWhite)
     draw = ImageDraw.Draw(im)
     cursor_pos = 50
-    draw_text(draw, (140, cursor_pos), 'Application for Registration of Petition in Bankruptcy', arialbold, 28, clBlack)
+    draw_text(draw, (140, cursor_pos), 'Application for Registration of Petition in Bankruptcy', arialbold, fs_main, clBlack)
     cursor_pos += 50
-    draw_text(draw, (160, cursor_pos), 'This is an official copy of the data provided by the Insolvency',
-              arial, 24, clBlack)
+    draw_text(draw, (170, cursor_pos), 'This is an official copy of the data provided by the Insolvency',
+              arial, fs_sub, clBlack)
     cursor_pos += 30
-
-    draw_text(draw, (200, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, 24, clBlack)
+    draw_text(draw, (210, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, fs_sub, clBlack)
     cursor_pos += 80
-    draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, 22, clBlack)
+    draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, fs_sub_title, clBlack)
     cursor_pos += 30
     draw.line((100,cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
     cursor_pos += 30
     label_pos = 150
     data_pos = 400
-    draw_text(draw, (label_pos, cursor_pos), 'Reference: ', arial, 22, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['application_ref'], arial, 22, clBlack)
+    draw_text(draw, (label_pos, cursor_pos), 'Reference: ', arial, fs_text, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['application_ref'], arial, fs_text, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (label_pos, cursor_pos), 'Key Number: ' , arial, fs_text, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['key_number'], arial, fs_text, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (label_pos, cursor_pos), 'Date: ', arial, fs_text, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['application_date'], arial, fs_text, clBlack)
     cursor_pos += 50
-    draw_text(draw, (label_pos, cursor_pos), 'Key Number: ' , arial, 22, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['key_number'], arial, 22, clBlack)
-    cursor_pos += 50
-    draw_text(draw, (label_pos, cursor_pos), 'Date: ', arial, 22, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['application_date'], arial, 22, clBlack)
-    cursor_pos += 50
-    draw_text(draw, (100, cursor_pos), 'Particulars of Debtor:', arialbold, 22, clBlack)
+    draw_text(draw, (100, cursor_pos), 'Particulars of Debtor:', arialbold, fs_sub_title, clBlack)
 
     cursor_pos += 30
     draw.line((100, cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
@@ -540,66 +545,68 @@ def get_office_copy():
         name_count = 1
         for debtor_name in data['debtor_names']:
             if name_count == 1:
-                cursor_pos += 50
-                draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, 22, clBlack)
+                cursor_pos += 30
+                draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, fs_text, clBlack)
             elif name_count == 2:
-                cursor_pos += 50
-                draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
+                cursor_pos += 30
+                draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, fs_text, clBlack)
             else:
-                cursor_pos += 20
+                cursor_pos += 25
             debtor_forenames = ""
             for forenames in debtor_name['forenames']:
                 debtor_forenames += forenames + " "
             debtor_forenames = debtor_forenames.strip()
-            draw_text(draw, (data_pos, cursor_pos), debtor_forenames + " " + debtor_name['surname'], arial, 22, clBlack)
+            draw_text(draw, (data_pos, cursor_pos), debtor_forenames + " " + debtor_name['surname'], arial, fs_text, clBlack)
             name_count += 1
     # cursor_pos += 50
     # draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
-    cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Date of Birth: ', arial, 22, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['date_of_birth'], arial, 22, clBlack)
-    cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Gender: ', arial, 22, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['gender'], arial, 22, clBlack)
-    cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, 22, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, 22, clBlack)
-    cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, 22, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, 22, clBlack)
-    cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Residence: ', arial, 22, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (150, cursor_pos), 'Date of Birth: ', arial, fs_text, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['date_of_birth'], arial, fs_text, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (150, cursor_pos), 'Gender: ', arial, fs_text, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['gender'], arial, fs_text, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, fs_text, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, fs_text, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, fs_text, clBlack)
+    draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, fs_text, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (150, cursor_pos), 'Residence: ', arial, fs_text, clBlack)
     if data['residence_withheld'] == True:
-        draw_text(draw, (data_pos, cursor_pos), "DEBTORS ADDRESS IS STATED TO BE UNKNOWN", arial, 22, clBlack)
+        draw_text(draw, (data_pos, cursor_pos), "DEBTORS ADDRESS IS STATED TO BE UNKNOWN", arial, fs_text, clBlack)
     else: # print debtors addresses
+        cursor_pos -=40
         for address in data['residence']:
+            cursor_pos += 40
             for address_line in address['address_lines']:
-                draw_text(draw, (data_pos, cursor_pos), address_line, arial, 22, clBlack)
-                cursor_pos += 30
-            draw_text(draw, (data_pos, cursor_pos), address['county'], arial, 22, clBlack)
-            cursor_pos += 30
-            draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, 22, clBlack)
-    cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Business Address: ', arial, 22, clBlack)
+                draw_text(draw, (data_pos, cursor_pos), address_line, arial, fs_text, clBlack)
+                cursor_pos += 25
+            draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, clBlack)
+            cursor_pos += 25
+            draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (150, cursor_pos), 'Business Address: ', arial, fs_text, clBlack)
     if 'business_address' in data:
-        draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, 22, clBlack)
-    cursor_pos += 50
-    draw_text(draw, (150, cursor_pos), 'Investment Property: ', arial, 22, clBlack)
+        draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, fs_text, clBlack)
+    cursor_pos += 30
+    draw_text(draw, (150, cursor_pos), 'Investment Property: ', arial, fs_text, clBlack)
     if 'investment_property' in data:
-        draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, 22, clBlack)
+        draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, fs_text, clBlack)
     cursor_pos = 1250
     left_pos = 50
-    draw_text(draw, (left_pos, cursor_pos), 'Land Registry', arial, 12, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'Land Registry', arial, fs_footer, clGrey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Land Charges Department', arial, 12, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'Land Charges Department', arial, fs_footer, clGrey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Seaton Court', arial, 12, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'Seaton Court', arial, fs_footer, clGrey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), '2 William Prance Road', arial, 12, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), '2 William Prance Road', arial, fs_footer, clGrey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Plymouth', arial, 12, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'Plymouth', arial, fs_footer, clGrey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'PL6 5WS', arial, 12, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'PL6 5WS', arial, fs_footer, clGrey)
     del draw
     image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/images')
     im.save(os.path.join(image_path, 'test.tiff'), 'tiff', resolution=120.0)
