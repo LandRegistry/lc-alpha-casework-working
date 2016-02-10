@@ -204,6 +204,7 @@ def create_lc_registration(data):
         raise RuntimeError("Unexpected name type: {}".format(name['type']))
 
     party['names'].append(name)
+    party['occupation'] = data['lc_register_details']['occupation']
     registration['parties'].append(party)
 
     if 'additional_info' in data:
