@@ -207,8 +207,8 @@ def create_lc_registration(data):
     party['occupation'] = data['lc_register_details']['occupation']
     registration['parties'].append(party)
 
-    if 'additional_info' in data:
-        data['additional_information'] = data['additional_info']
+    if 'additional_info' in data['lc_register_details']:
+        registration['additional_information'] = data['lc_register_details']['additional_info']
 
     registration['particulars'] = {
         "counties": data['lc_register_details']['county'],
