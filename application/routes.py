@@ -207,7 +207,7 @@ def update_application(appn_id):
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
             appn = complete_application(cursor, appn_id, data)
-        elif action == 'amend':
+        elif action == 'amend' or action == 'rectify':
             appn = amend_application(cursor, appn_id, data)
         else:
             return Response("Invalid action", status=400)
