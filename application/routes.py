@@ -13,6 +13,7 @@ from application.applications import insert_new_application, get_application_lis
 from application.documents import get_document, get_image
 from application.error import raise_error
 import io
+from io import BytesIO
 from application.ocr import recognise
 import traceback
 from PIL import Image, ImageDraw, ImageFont, TiffImagePlugin
@@ -609,18 +610,24 @@ def get_office_copy():
     draw_text(draw, (left_pos, cursor_pos), 'PL6 5WS', arial, fs_footer, clGrey)
     del draw
     image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/images')
-    im.save(os.path.join(image_path, 'test.tiff'), 'tiff', resolution=120.0)
-    im.save(os.path.join(image_path, 'output.pdf'), 'PDF', resolution=120.0)
-    TiffImagePlugin.WRITE_LIBTIFF = True
-    im.save(os.path.join(image_path, 'output.tiff'), compression = "tiff_lzw", resolution=120.0)
-    TiffImagePlugin.WRITE_LIBTIFF = False
+    file_name = 'officeopy_'+class_of_charge + '_' + reg_no + '_' + date
     if return_pdf:
-        response = send_file(os.path.join(image_path, 'output.pdf'), as_attachment=False,
-                             attachment_filename='output.pdf')
+        file_path = os.path.join(image_path, 'output.pdf')
+        im.save(file_path, 'PDF', resolution=120.0)
+        file_name += '.pdf'
     else:
-        response = send_file(os.path.join(image_path, 'output.tiff'), as_attachment=True,
-                             attachment_filename='output.tiff')
+        TiffImagePlugin.WRITE_LIBTIFF = True
+        file_path = os.path.join(image_path, 'output.tiff')
+        im.save(file_path, compression = "tiff_lzw", resolution=120.0)
+        TiffImagePlugin.WRITE_LIBTIFF = False
+        file_name += '.tiff'
+
+    with open(file_path, 'rb') as f:
+        contents = f.read()
+    response = send_file(BytesIO(contents), as_attachment=True, attachment_filename=file_name)
+    os.remove(file_path)
     return response
+
 
 
 def draw_text(canvas, text_pos, text, font_name, font_size, font_color):
