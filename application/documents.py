@@ -21,6 +21,17 @@ def get_document(cursor, document_id):
     return data
 
 
+def get_raw_image(cursor, document_id, page_number):
+    cursor.execute("select content_type, image from documents where document_id=%(doc_id)s and page=%(page)s",
+                   {"doc_id": document_id, "page": page_number})
+    rows = cursor.fetchall()
+    if len(rows) == 0:
+        return None
+    row = rows[0]
+    # Python returns blob as memoryview object, convert back to bytes
+    return {"bytes": bytes(row['image']), "mimetype": row['content_type']}
+
+
 def get_image(cursor, document_id, page_number):
     cursor.execute("select content_type, image from documents where document_id=%(doc_id)s and page=%(page)s",
                    {"doc_id": document_id, "page": page_number})

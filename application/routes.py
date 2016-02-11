@@ -10,7 +10,7 @@ from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
     amend_application, set_lock_ind, clear_lock_ind, insert_result_row
-from application.documents import get_document, get_image
+from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
 from io import BytesIO
@@ -393,7 +393,10 @@ def get_form_image(doc_id, page_no):
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        data = get_image(cursor, doc_id, page_no)
+        if 'raw' in request.args:
+            data = get_raw_image(cursor, doc_id, page_no)
+        else:
+            data = get_image(cursor, doc_id, page_no)
     finally:
         complete(cursor)
     if data is None:
@@ -418,6 +421,19 @@ def get_registered_forms(date, reg_no):
             'document_id': rows[0]['doc_id']
         }
         return Response(json.dumps(result), status=200, mimetype='application/json')
+    finally:
+        complete(cursor)
+
+
+@app.route('/registered_forms/<date>/<reg_no>', methods=['DELETE'])
+def delete_all_reg_forms(date, reg_no):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('delete from registered_documents '
+                       'where number=%(no)s and date=%(date)s', {
+                           'no': reg_no, 'date': date
+                       })
+        return Response(status=200)
     finally:
         complete(cursor)
 
