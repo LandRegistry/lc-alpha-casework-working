@@ -222,18 +222,12 @@ def create_lc_registration(data):
     return registration
 
 
-#{"private": {"forenames": ["Bob"], "surname": "Howard"}, "complex": {"number": 0, "name": ""},
-# "estate_owner_ind": "Private Individual", "company": "", "local": {"area": "", "name": ""}, "other": ""},
+def store_image_for_later(cursor, document_id, reg_no, reg_date):
+    cursor.execute('INSERT INTO registered_documents (number, date, doc_id) '
+                   'VALUES( %(num)s, %(date)s, %(doc)s ) RETURNING id', {
+                       'num': reg_no, 'date': reg_date, 'doc': document_id
+                   })
 
-#"application_ref": "reference 11", "document_id": 66, "class_of_charge": "New Registration",
-# "customer_name": "Mr Conveyancer", "application_data": {"document_id": 66}, "appn_id": "2271", "form": "K1",
-# "residence_withheld": false, "status": "new", "date_received": "2015-11-05 14:01:57",
-# "customer_address": "2 New Street", "date_of_birth": "1980-01-01", "date": "2016-02-04",
-# "lc_register_details": {"county": ["Devon"], "class": "C(I)",
-# "estate_owner":
-# "additional_info": "dsfsd df sd", "estate_owner_ind": "Private Individual", "occupation": "Civl Servant",
-# "district": "Nine", "short_description": "Wibble"}, "key_number": "244095", "assigned_to": null,
-# "application_type": "K1", "work_type": "lc_regn"}
 
 def complete_application(cursor, appn_id, data):
     # Submit registration
@@ -256,24 +250,29 @@ def complete_application(cursor, appn_id, data):
 
     # Archive document
     document_id = data['application_data']['document_id']
-    pages = get_document(cursor, document_id)
+    #pages = get_document(cursor, document_id)
 
-    logging.warn("TEMPORARY LEGDB SUPRESSION")
-    if False:
-        for regn in regns['new_registrations']:
-            number = regn['number']
-            date = regn['date']
-            for page in pages:
-                image = get_image(cursor, document_id, page)
-                url = "{}/images/{}/{}/{}".format(app.config['LEGACY_ADAPTER_URI'],
-                                                  date,
-                                                  number,
-                                                  'A4')
-                headers = {'Content-Type': image['mimetype']}
-                doc_response = requests.put(url, data=image['bytes'], headers=headers)
-                if doc_response.status_code != 200:
-                    # TODO: error!
-                    pass
+    for regn in regns['new_registrations']:
+        number = regn['number']
+        date = regn['date']
+        store_image_for_later(cursor, document_id, number, date)
+
+    # logging.warn("TEMPORARY LEGDB SUPRESSION")
+    # if False:
+    #     for regn in regns['new_registrations']:
+    #         number = regn['number']
+    #         date = regn['date']
+    #         for page in pages:
+    #             image = get_image(cursor, document_id, page)
+    #             url = "{}/images/{}/{}/{}".format(app.config['LEGACY_ADAPTER_URI'],
+    #                                               date,
+    #                                               number,
+    #                                               'A4')
+    #             headers = {'Content-Type': image['mimetype']}
+    #             doc_response = requests.put(url, data=image['bytes'], headers=headers)
+    #             if doc_response.status_code != 200:
+    #                 # TODO: error!
+    #                 pass
 
     # Delete work-item
     delete_application(cursor, appn_id)

@@ -18,6 +18,7 @@ from application.ocr import recognise
 import traceback
 from PIL import Image, ImageDraw, ImageFont, TiffImagePlugin
 import os
+from application.oc import create_document
 
 
 valid_types = ['all', 'pab', 'wob',
@@ -207,7 +208,11 @@ def update_application(appn_id):
             update_application_details(cursor, appn_id, data)
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
+
+
             appn = complete_application(cursor, appn_id, data)
+
+
         elif action == 'amend' or action == 'rectify':
             appn = amend_application(cursor, appn_id, data)
         else:
@@ -883,6 +888,21 @@ def insert_result(request_id, result_type):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         insert_result_row(cursor, request_id, result_type)
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
+    return Response(status=200)
+
+
+@app.route('/b2b_forms', methods=['POST'])
+def insert_b2b_form():
+    data = request.get_json()
+
+    logging.info(data)
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        create_document(cursor, data, app.config)
         complete(cursor)
     except:
         rollback(cursor)

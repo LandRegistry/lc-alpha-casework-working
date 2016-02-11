@@ -24,6 +24,7 @@ class DevelopmentConfig(Config):
     MQ_HOSTNAME = "localhost"
     MQ_PORT = "5672"
     ERROR_QUEUE_NAME = "errors"
+    TEMP_DIRECTORY = '/vagrant'
 
 
 class PreviewConfig(Config):
@@ -43,3 +44,4 @@ class PreviewConfig(Config):
     MQ_HOSTNAME = "localhost"
     MQ_PORT = "5672"
     ERROR_QUEUE_NAME = "errors"
+    TEMP_DIRECTORY = '/tmp'
