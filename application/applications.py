@@ -262,7 +262,7 @@ def complete_application(cursor, appn_id, data):
 
     # Archive document
     document_id = data['application_data']['document_id']
-    #pages = get_document(cursor, document_id)
+    pages = get_document(cursor, document_id)
 
     for regn in regns['new_registrations']:
         number = regn['number']

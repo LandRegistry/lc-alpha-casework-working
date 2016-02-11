@@ -402,6 +402,26 @@ def get_form_image(doc_id, page_no):
     return Response(data['bytes'], status=200, mimetype=data['mimetype'])
 
 
+@app.route('/registered_forms/<date>/<reg_no>', methods=['GET'])
+def get_registered_forms(date, reg_no):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('select doc_id from registered_documents '
+                       'where number=%(no)s and date=%(date)s', {
+                           'no': reg_no, 'date': date
+                       })
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            return Response(status=404)
+
+        result = {
+            'document_id': rows[0]['doc_id']
+        }
+        return Response(json.dumps(result), status=200, mimetype='application/json')
+    finally:
+        complete(cursor)
+
+
 # =========== OTHER ROUTES ==============
 @app.route('/keyholders/<key_number>', methods=['GET'])
 @cross_origin()
