@@ -219,6 +219,18 @@ def create_lc_registration(data):
     if data['lc_register_details']['priority_notice'] != '':
         registration['particulars']['priority_notice'] = data['lc_register_details']['priority_notice']
 
+    if 'priority_notice_ind' in data:
+        # get the priority notice expiry date
+        today = datetime.now().strftime('%Y-%m-%d')
+        date_uri = app.config['LEGACY_ADAPTER_URI'] + '/dates/' + today
+        date_response = requests.get(date_uri)
+
+        if date_response.status_code != 200:
+            raise RuntimeError("Unexpected return from legacy_adapter/dates: " + str(date_response.status_code))
+
+        date_info = date_response.json()
+        registration['priority_notice'] = {'expires': date_info['priority_notice_expires']}
+
     return registration
 
 
@@ -240,7 +252,7 @@ def complete_application(cursor, appn_id, data):
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
 
-    print(data)
+    print('!!!!!!!data in complete application!!!!!!', data)
 
     response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
     if response.status_code != 200:
