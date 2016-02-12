@@ -10,7 +10,7 @@ from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
     amend_application, set_lock_ind, clear_lock_ind, insert_result_row
-from application.documents import get_document, get_image
+from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
 from io import BytesIO
@@ -18,6 +18,7 @@ from application.ocr import recognise
 import traceback
 from PIL import Image, ImageDraw, ImageFont, TiffImagePlugin
 import os
+from application.oc import create_document
 
 
 valid_types = ['all', 'pab', 'wob',
@@ -207,7 +208,11 @@ def update_application(appn_id):
             update_application_details(cursor, appn_id, data)
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
+
+
             appn = complete_application(cursor, appn_id, data)
+
+
         elif action == 'amend' or action == 'rectify':
             appn = amend_application(cursor, appn_id, data)
         else:
@@ -388,13 +393,49 @@ def get_form_image(doc_id, page_no):
 
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        data = get_image(cursor, doc_id, page_no)
+        if 'raw' in request.args:
+            data = get_raw_image(cursor, doc_id, page_no)
+        else:
+            data = get_image(cursor, doc_id, page_no)
     finally:
         complete(cursor)
     if data is None:
         return Response(status=404)
 
     return Response(data['bytes'], status=200, mimetype=data['mimetype'])
+
+
+@app.route('/registered_forms/<date>/<reg_no>', methods=['GET'])
+def get_registered_forms(date, reg_no):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('select doc_id from registered_documents '
+                       'where number=%(no)s and date=%(date)s', {
+                           'no': reg_no, 'date': date
+                       })
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            return Response(status=404)
+
+        result = {
+            'document_id': rows[0]['doc_id']
+        }
+        return Response(json.dumps(result), status=200, mimetype='application/json')
+    finally:
+        complete(cursor)
+
+
+@app.route('/registered_forms/<date>/<reg_no>', methods=['DELETE'])
+def delete_all_reg_forms(date, reg_no):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('delete from registered_documents '
+                       'where number=%(no)s and date=%(date)s', {
+                           'no': reg_no, 'date': date
+                       })
+        return Response(status=200)
+    finally:
+        complete(cursor)
 
 
 # =========== OTHER ROUTES ==============
@@ -902,6 +943,21 @@ def insert_result(request_id, result_type):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         insert_result_row(cursor, request_id, result_type)
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
+    return Response(status=200)
+
+
+@app.route('/b2b_forms', methods=['POST'])
+def insert_b2b_form():
+    data = request.get_json()
+
+    logging.info(data)
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        create_document(cursor, data, app.config)
         complete(cursor)
     except:
         rollback(cursor)
