@@ -490,6 +490,25 @@ def get_complex_names_post():
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
+@app.route('/complex_names/<name>/<number>', methods=['POST'])
+@cross_origin()
+def insert_complex_name(name, number):
+    logging.debug("Complex insert")
+    today = datetime.now().strftime('%Y-%m-%d')
+    data = {"amend": None,
+            "date": today,
+            "number": number,
+            "source": None,
+            "uid": None,  # TODO: what is this going to be?
+            "name": name
+            }
+    uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names'
+    response = requests.post(uri, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+    logging.info('POST {} -- {}'.format(uri, response))
+    result = {'response': response.text}
+    return Response(json.dumps(result), status=response.status_code, mimetype='application/json')
+
+
 @app.route('/searches', methods=['POST'])
 def post_search():
     data = request.get_json(force=True)
