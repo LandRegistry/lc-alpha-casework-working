@@ -127,6 +127,7 @@ def create_application():
 
     if 'application_type' not in data or 'date_received' not in data \
             or "work_type" not in data or 'application_data' not in data:
+        logging.debug('something is missing in request')
         return Response(status=400)
     if data['application_data'] == "":
         data['application_data'] = {"document_id": data['document_id']} #to get incoming scanned docs to display
@@ -447,7 +448,7 @@ def get_keyholder(key_number):
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
-@app.route('/counties/', methods=['GET'])
+@app.route('/counties', methods=['GET'])
 @cross_origin()
 def get_counties_list():
     params = ""

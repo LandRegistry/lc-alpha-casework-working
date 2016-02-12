@@ -9,7 +9,7 @@ def complete(cursor):
 
 
 def get_document(cursor, document_id):
-    cursor.execute("select page from documents where document_id = %(id)s", {"id": document_id})
+    cursor.execute("select page, size from documents where document_id = %(id)s", {"id": document_id})
     rows = cursor.fetchall()
 
     data = []
@@ -17,7 +17,10 @@ def get_document(cursor, document_id):
         data = None
     else:
         for row in rows:
-            data.append(row['page'])
+            data.append({
+                'page': row['page'],
+                'size': row['size']
+            })
     return data
 
 
