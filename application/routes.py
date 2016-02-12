@@ -210,11 +210,7 @@ def update_application(appn_id):
             update_application_details(cursor, appn_id, data)
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
-
-
             appn = complete_application(cursor, appn_id, data)
-
-
         elif action == 'amend' or action == 'rectify':
             appn = amend_application(cursor, appn_id, data)
         else:
@@ -223,8 +219,6 @@ def update_application(appn_id):
     except:
         rollback(cursor)
         raise
-
-
     return Response(json.dumps(appn), status=200)
 
 # ============ FORMS ==============
@@ -964,3 +958,12 @@ def insert_b2b_form():
         rollback(cursor)
         raise
     return Response(status=200)
+
+
+@app.route('/reprint', method=['POST'])
+def reprint():
+    # extract fields
+    # request_id = call LAND_CHARGES_API /request_details?registration_no&registration_date
+    # call result-generate/reprint?request=request_id
+    data = request.get_json()
+    return
