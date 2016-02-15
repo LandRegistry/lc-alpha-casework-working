@@ -969,7 +969,8 @@ def reprints(reprint_type, registration_no, registration_date):
     if "request_id" not in data:
         return "invalid request_id for " + registration_no + ' ' + registration_date
     request_id = data['request_id']
-
-    # call result-generate/reprints?request=request_id
-    response = "I have pretended to call result generate for " + reprint_type + " request_id: " + str(request_id)
-    return Response(response, status=200)
+    # for the time being call reprint on result-generate. this probably needs moving into casework-api
+    url = app.config['RESULT_GENERATE_URI'] + '/reprints?request=' + str(request_id)
+    response = requests.get(url)
+    return send_file(BytesIO(response.content), as_attachment=False, attachment_filename='reprint.pdf',
+                     mimetype='application/pdf')

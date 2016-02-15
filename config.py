@@ -16,6 +16,7 @@ class DevelopmentConfig(Config):
     LAND_CHARGES_URI = 'http://localhost:5004'
     DOCUMENT_API_URI = 'http://localhost:5014'
     LEGACY_ADAPTER_URI = 'http://localhost:5007'
+    RESULT_GENERATE_URI = 'http://localhost:5016'
     IMAGE_DIRECTORY = '/home/vagrant/interim/'
     ALLOW_DEV_ROUTES = True
     APPLICATION_NAME = 'lc-casework-api'
