@@ -960,10 +960,16 @@ def insert_b2b_form():
     return Response(status=200)
 
 
-@app.route('/reprint', methods=['POST'])
-def reprint():
-    # extract fields
-    # request_id = call LAND_CHARGES_API /request_details?registration_no&registration_date
-    # call result-generate/reprint?request=request_id
-    data = request.get_json()
-    return
+@app.route('/reprints/<reprint_type>/<registration_no>/<registration_date>', methods=['GET'])
+def reprints(reprint_type, registration_no, registration_date):
+    response = requests.get(app.config['LAND_CHARGES_URI'] + '/request_details?reprint_type=' + reprint_type +
+                            '&registration_no=' + registration_no + '&registration_date=' + registration_date)
+    data = json.loads(response.content.decode('utf-8'))
+    print(data)
+    if "request_id" not in data:
+        return "invalid request_id for " + registration_no + ' ' + registration_date
+    request_id = data['request_id']
+
+    # call result-generate/reprints?request=request_id
+    response = "I have pretended to call result generate for " + reprint_type + " request_id: " + str(request_id)
+    return Response(response, status=200)
