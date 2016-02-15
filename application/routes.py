@@ -209,11 +209,7 @@ def update_application(appn_id):
             update_application_details(cursor, appn_id, data)
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
-
-
             appn = complete_application(cursor, appn_id, data)
-
-
         elif action == 'amend' or action == 'rectify':
             appn = amend_application(cursor, appn_id, data)
         else:
@@ -222,7 +218,6 @@ def update_application(appn_id):
     except:
         rollback(cursor)
         raise
-
 
     return Response(json.dumps(appn), status=200)
 
