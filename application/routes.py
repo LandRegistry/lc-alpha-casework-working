@@ -960,7 +960,7 @@ def insert_b2b_form():
     return Response(status=200)
 
 
-@app.route('/reprint', method=['POST'])
+@app.route('/reprint', methods=['POST'])
 def reprint():
     # extract fields
     # request_id = call LAND_CHARGES_API /request_details?registration_no&registration_date
