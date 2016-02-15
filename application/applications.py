@@ -113,11 +113,13 @@ def update_application_details(cursor, appn_id, data):
 
 
 def delete_application(cursor, appn_id):
+    logging.info('DELETE from pending_application where id=%s', appn_id)
     cursor.execute('DELETE from pending_application where id=%(id)s', {'id': appn_id})
     return cursor.rowcount
 
 
 def amend_application(cursor, appn_id, data):
+    logging.debug(data)
     reg_no = data['regn_no']
     date = data['registration']['date']
     doc_id = data['document_id']
@@ -130,15 +132,13 @@ def amend_application(cursor, appn_id, data):
     if response.status_code != 200:
         return response
 
-    # Archive amendment docs under new ID
     regns = response.json()
-    date_string = datetime.now().strftime("%Y_%m_%d")
-    for reg_no in regns['new_registrations']:
-        url = app.config['DOCUMENT_API_URI'] + '/archive/' + date_string + '/' + str(reg_no)
-        body = {'document_id': doc_id}
-        doc_response = requests.post(url, data=json.dumps(body), headers=headers)
-        if doc_response.status_code != 200:
-            return doc_response
+    pages = get_document(cursor, doc_id)
+
+    for regn in regns['new_registrations']:
+        number = regn['number']
+        date = regn['date']
+        store_image_for_later(cursor, doc_id, number, date)
 
     # Delete work-item
     delete_application(cursor, appn_id)
@@ -270,23 +270,6 @@ def complete_application(cursor, appn_id, data):
         number = regn['number']
         date = regn['date']
         store_image_for_later(cursor, document_id, number, date)
-
-    # logging.warn("TEMPORARY LEGDB SUPRESSION")
-    # if False:
-    #     for regn in regns['new_registrations']:
-    #         number = regn['number']
-    #         date = regn['date']
-    #         for page in pages:
-    #             image = get_image(cursor, document_id, page)
-    #             url = "{}/images/{}/{}/{}".format(app.config['LEGACY_ADAPTER_URI'],
-    #                                               date,
-    #                                               number,
-    #                                               'A4')
-    #             headers = {'Content-Type': image['mimetype']}
-    #             doc_response = requests.put(url, data=image['bytes'], headers=headers)
-    #             if doc_response.status_code != 200:
-    #                 # TODO: error!
-    #                 pass
 
     # Delete work-item
     delete_application(cursor, appn_id)
