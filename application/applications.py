@@ -120,6 +120,10 @@ def delete_application(cursor, appn_id):
 def amend_application(cursor, appn_id, data):
     reg_no = data['regn_no']
     date = data['registration']['date']
+    doc_id = data['document_id']
+    del data['regn_no']
+    del data['registration']
+    del data['document_id']
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
     headers = {'Content-Type': 'application/json'}
     response = requests.put(url, data=json.dumps(data), headers=headers)
@@ -131,7 +135,7 @@ def amend_application(cursor, appn_id, data):
     date_string = datetime.now().strftime("%Y_%m_%d")
     for reg_no in regns['new_registrations']:
         url = app.config['DOCUMENT_API_URI'] + '/archive/' + date_string + '/' + str(reg_no)
-        body = {'document_id': data['document_id']}
+        body = {'document_id': doc_id}
         doc_response = requests.post(url, data=json.dumps(body), headers=headers)
         if doc_response.status_code != 200:
             return doc_response
@@ -245,8 +249,6 @@ def complete_application(cursor, appn_id, data):
     # Submit registration
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
-
-    print('!!!!!!!data in complete application!!!!!!', data)
 
     response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
     if response.status_code != 200:
