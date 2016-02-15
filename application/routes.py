@@ -534,7 +534,7 @@ def post_search():
         response = requests.get(uri)
         resp_data = response.json()
         res_type = resp_data['search_type']
-        insert_result_row(cursor, id, res_type)
+        insert_result_row(cursor, req_id, res_type)
     complete(cursor)
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
