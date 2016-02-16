@@ -133,7 +133,6 @@ def amend_application(cursor, appn_id, data):
         return response
 
     regns = response.json()
-    pages = get_document(cursor, doc_id)
 
     for regn in regns['new_registrations']:
         number = regn['number']
