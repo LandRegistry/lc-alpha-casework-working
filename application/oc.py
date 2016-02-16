@@ -39,7 +39,7 @@ def create_ins_image(data, filename, config):
     cursor_pos += 80
     draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, fs_sub_title, clBlack)
     cursor_pos += 30
-    draw.line((100,cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
+    draw.line((100, cursor_pos, (im.size[1]-300), cursor_pos), fill=0)
     cursor_pos += 30
     label_pos = 150
     data_pos = 400
@@ -55,7 +55,7 @@ def create_ins_image(data, filename, config):
     draw_text(draw, (100, cursor_pos), 'Particulars of Debtor:', arialbold, fs_sub_title, clBlack)
 
     cursor_pos += 30
-    draw.line((100, cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
+    draw.line((100, cursor_pos, (im.size[1]-300), cursor_pos), fill=0)
 
     if 'debtor_names' in data:
         name_count = 1
@@ -91,10 +91,10 @@ def create_ins_image(data, filename, config):
     cursor_pos += 30
     draw_text(draw, (150, cursor_pos), 'Residence: ', arial, fs_text, clBlack)
 
-    if data['residence_withheld'] == True:
+    if data['residence_withheld'] is True:
         draw_text(draw, (data_pos, cursor_pos), "DEBTORS ADDRESS IS STATED TO BE UNKNOWN", arial, fs_text, clBlack)
     else:  # print debtors addresses
-        cursor_pos -=40
+        cursor_pos -= 40
         for address in data['residence']:
             cursor_pos += 40
             for address_line in address['address_lines']:
