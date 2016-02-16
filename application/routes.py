@@ -976,7 +976,7 @@ def reprints(reprint_type):
     elif reprint_type == 'search':
         request_id = request.args['request_id']
     if request_id == '':
-        return Response("Error: couldnt determin request id", status=400)
+        return Response("Error: could not determine request id", status=400)
     # for the time being call reprint on result-generate. this probably needs moving into casework-api
     url = app.config['RESULT_GENERATE_URI'] + '/reprints?request=' + str(request_id)
     response = requests.get(url)
