@@ -266,7 +266,12 @@ def complete_application(cursor, appn_id, data):
     document_id = data['application_data']['document_id']
     pages = get_document(cursor, document_id)
 
-    for regn in regns['new_registrations']:
+    if data['form'] == 'K6':
+        reg_type = 'priority_notices'
+    else:
+        reg_type = 'new_registrations'
+
+    for regn in regns[reg_type]:
         number = regn['number']
         date = regn['date']
         store_image_for_later(cursor, document_id, number, date)
