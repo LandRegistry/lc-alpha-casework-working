@@ -963,9 +963,8 @@ def insert_b2b_form():
 @app.route('/reprints/<reprint_type>/<registration_no>/<registration_date>', methods=['GET'])
 def reprints(reprint_type, registration_no, registration_date):
     response = requests.get(app.config['LAND_CHARGES_URI'] + '/request_details?reprint_type=' + reprint_type +
-                            '&registration_no=' + registration_no + '&registration_date=' + registration_date)
+                        '&registration_no=' + registration_no + '&registration_date=' + registration_date)
     data = json.loads(response.content.decode('utf-8'))
-    print(data)
     if "request_id" not in data:
         return "invalid request_id for " + registration_no + ' ' + registration_date
     request_id = data['request_id']
@@ -974,3 +973,14 @@ def reprints(reprint_type, registration_no, registration_date):
     response = requests.get(url)
     return send_file(BytesIO(response.content), as_attachment=False, attachment_filename='reprint.pdf',
                      mimetype='application/pdf')
+
+
+@app.route('/reprints/search', methods=['POST'])
+def get_searches():
+    search_data = request.data
+    print("search data: ", str(search_data))
+    response = requests.post(app.config['LAND_CHARGES_URI'] + '/request_search_details',  data=search_data,
+                             headers={'Content-Type': 'application/json'})
+    data = json.loads(response.content.decode('utf-8'))
+    print("data: ", str(data))
+    return Response(json.dumps(data), status=200, mimetype='application/json')
