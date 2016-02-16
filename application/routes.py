@@ -960,14 +960,23 @@ def insert_b2b_form():
     return Response(status=200)
 
 
-@app.route('/reprints/<reprint_type>/<registration_no>/<registration_date>', methods=['GET'])
-def reprints(reprint_type, registration_no, registration_date):
-    response = requests.get(app.config['LAND_CHARGES_URI'] + '/request_details?reprint_type=' + reprint_type +
-                            '&registration_no=' + registration_no + '&registration_date=' + registration_date)
-    data = json.loads(response.content.decode('utf-8'))
-    if "request_id" not in data:
-        return "invalid request_id for " + registration_no + ' ' + registration_date
-    request_id = data['request_id']
+@app.route('/reprints/<reprint_type>', methods=['GET'])
+def reprints(reprint_type):
+    request_id = ''
+    if reprint_type == 'registration':
+        registration_no = request.args['registration_no']
+        registration_date = request.args['registration_date']
+        url = app.config['LAND_CHARGES_URI'] + '/request_details?reprint_type=' + reprint_type
+        url += '&registration_no=' + registration_no + '&registration_date=' + registration_date
+        response = requests.get(url)
+        data = json.loads(response.content.decode('utf-8'))
+        if "request_id" not in data:
+            return "invalid request_id for " + registration_no + ' ' + registration_date
+        request_id = data['request_id']
+    elif reprint_type == 'search':
+        request_id = request.args['request_id']
+    if request_id == '':
+        return Response("Error: couldnt determin request id", status=400)
     # for the time being call reprint on result-generate. this probably needs moving into casework-api
     url = app.config['RESULT_GENERATE_URI'] + '/reprints?request=' + str(request_id)
     response = requests.get(url)
@@ -978,7 +987,9 @@ def reprints(reprint_type, registration_no, registration_date):
 @app.route('/reprints/search', methods=['POST'])
 def get_searches():
     search_data = request.data
-    response = requests.post(app.config['LAND_CHARGES_URI'] + '/request_search_details',  data=search_data,
+    print("search data: ", str(search_data))
+    response = requests.post(app.config['LAND_CHARGES_URI'] + '/request_search_details', data=search_data,
                              headers={'Content-Type': 'application/json'})
     data = json.loads(response.content.decode('utf-8'))
+    print("data: ", str(data))
     return Response(json.dumps(data), status=200, mimetype='application/json')
