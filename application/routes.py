@@ -991,5 +991,4 @@ def get_searches():
     response = requests.post(app.config['LAND_CHARGES_URI'] + '/request_search_details', data=search_data,
                              headers={'Content-Type': 'application/json'})
     data = json.loads(response.content.decode('utf-8'))
-    print("data: ", str(data))
     return Response(json.dumps(data), status=200, mimetype='application/json')
