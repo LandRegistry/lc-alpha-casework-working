@@ -48,7 +48,7 @@ stock_data = '[' +
     '{"delivery_method": "Postal", "date": "2015-11-05 13:48:57", "work_type": "search_bank", "application_type": "K16", "document_id": 65},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 14:01:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 65},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 13:56:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 65},' +
-    '{"delivery_method": "Postal", "date": "2015-11-05 13:55:57", "work_type": "lc_rect", "application_type": "K9", "document_id": 65},' +
+    '{"delivery_method": "Postal", "date": "2015-11-05 13:55:57", "work_type": "lc_rect", "application_type": "K9", "document_id": 41},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 14:06:57", "work_type": "lc_renewal", "application_type": "K7", "document_id": 65},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 14:05:57", "work_type": "lc_renewal", "application_type": "K7", "document_id": 65},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 13:55:57", "work_type": "lc_stored", "application_type": "K2", "document_id": 65},' +
@@ -235,7 +235,7 @@ standard_data = [
     { "type" => "K11", "images" => ["img39_1.tiff","img39_2.tiff"] },
     { "type" => "WO(B)", "images" => ["img40_1.tiff"] },
     { "type" => "K11", "images" => ["img41_1.tiff","img41_2.tiff"] },
-    { "type" => "WO(B)", "images" => ["img42_1.tiff"] },
+    { "type" => "K9", "images" => ["img42_1.tiff"] },
     { "type" => "PA(B)", "images" => ["img43_1.tiff"] },
     { "type" => "Unknown", "images" => ["img44_1.tiff"] },
     { "type" => "WO(B)", "images" => ["img45_1.tiff"] },
