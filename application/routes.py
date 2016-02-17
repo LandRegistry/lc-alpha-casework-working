@@ -490,11 +490,11 @@ def get_complex_names_post():
 def insert_complex_name(name, number):
     logging.debug("Complex insert")
     today = datetime.now().strftime('%Y-%m-%d')
-    data = {"amend": None,
+    data = {"amend": " ",
             "date": today,
             "number": number,
-            "source": None,
-            "uid": None,  # TODO: what is this going to be?
+            "source": " ",
+            "uid": " ",  # TODO: what is this going to be?
             "name": name
             }
     uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names'
