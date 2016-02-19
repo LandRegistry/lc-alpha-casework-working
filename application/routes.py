@@ -504,6 +504,15 @@ def insert_complex_name(name, number):
     return Response(json.dumps(result), status=response.status_code, mimetype='application/json')
 
 
+@app.route('/court_check/<court>/<ref>/<year>', methods=['GET'])
+def court_ref_existence_check(court, ref, year):
+    logging.debug("Court existence checking")
+
+    url = app.config['LAND_CHARGES_URI'] + '/court_check/' + court + '/' + ref + '/' + year
+    response = requests.get(url)
+    return Response(response.text, status=response.status_code, mimetype='application/json')
+
+
 @app.route('/searches', methods=['POST'])
 def post_search():
     data = request.get_json(force=True)
