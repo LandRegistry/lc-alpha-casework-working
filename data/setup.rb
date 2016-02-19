@@ -46,8 +46,8 @@ stock_data = '[' +
     '{"delivery_method": "Postal", "date": "2015-11-05 14:19:57", "work_type": "lc_regn", "application_type": "K4", "document_id": 69},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 14:31:57", "work_type": "lc_regn", "application_type": "K4", "document_id": 69},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 13:48:57", "work_type": "search_bank", "application_type": "K16", "document_id": 65},' +
-    '{"delivery_method": "Postal", "date": "2015-11-05 14:01:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 65},' +
-    '{"delivery_method": "Postal", "date": "2015-11-05 13:56:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 65},' +
+    '{"delivery_method": "Postal", "date": "2015-11-05 14:01:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 64},' +
+    '{"delivery_method": "Postal", "date": "2015-11-05 13:56:57", "work_type": "lc_pn", "application_type": "K6", "document_id": 64},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 13:55:57", "work_type": "lc_rect", "application_type": "K9", "document_id": 41},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 14:06:57", "work_type": "lc_renewal", "application_type": "K7", "document_id": 65},' +
     '{"delivery_method": "Postal", "date": "2015-11-05 14:05:57", "work_type": "lc_renewal", "application_type": "K7", "document_id": 65},' +
