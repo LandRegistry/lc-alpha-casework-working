@@ -249,7 +249,10 @@ def complete_application(cursor, appn_id, data):
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
 
-    response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
+    if 'lc_register_details' in data:
+        response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
+    else:  # banks registration
+        response = requests.post(url, data=json.dumps(data), headers=headers)
     if response.status_code != 200:
         logging.error(response.text)
         raise RuntimeError("Unexpected response from /registrations: {}".format(response.status_code))
