@@ -315,3 +315,41 @@ def insert_result_row(cursor, request_id, result_type):
     except:
         raise
     return "success"
+
+
+def cancel_application(cursor, appn_id, data):
+    # Cancel registration
+    url = app.config['LAND_CHARGES_URI'] + '/cancellations'
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+    if response.status_code != 200:
+        logging.error(response.text)
+        raise RuntimeError("Unexpected response from /cancellations: {}".format(response.status_code))
+
+    regns = response.json()
+
+    # Insert print job
+    # insert_result_row(cursor, regns['request_id'], 'registration')
+    # TODO error handling on inserting print job row
+
+
+    # Archive document
+    document_id = data['application_data']['document_id']
+    pages = get_document(cursor, document_id)
+
+    if data['form'] == 'K6':
+        reg_type = 'priority_notices'
+    else:
+        reg_type = 'new_registrations'
+
+    for regn in regns[reg_type]:
+        number = regn['number']
+        date = regn['date']
+        store_image_for_later(cursor, document_id, number, date)
+
+    # Delete work-item
+    delete_application(cursor, appn_id)
+
+    # return regn nos
+    return regns
+
