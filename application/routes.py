@@ -9,7 +9,7 @@ import requests
 from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
-    amend_application, set_lock_ind, clear_lock_ind, insert_result_row
+    amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application
 from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
@@ -213,6 +213,8 @@ def update_application(appn_id):
             appn = complete_application(cursor, appn_id, data)
         elif action == 'amend' or action == 'rectify':
             appn = amend_application(cursor, appn_id, data)
+        elif action == 'cancel':
+            appn = cancel_application(cursor, appn_id, data)
         else:
             return Response("Invalid action", status=400)
         complete(cursor)
