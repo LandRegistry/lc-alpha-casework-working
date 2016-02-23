@@ -513,6 +513,37 @@ def court_ref_existence_check(court, ref, year):
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
+@app.route('/original', methods=['POST'])
+def get__originals():
+    data = request.get_json(force=True)
+    logging.debug(json.dumps(data))
+
+    date = data['date']
+    number = data['number']
+    url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + number
+    response = requests.get(url)
+    if response.status_code == 200:
+        """ returned_names = []
+            text = json.loads(response.text)
+            for names in text['parties'][0]['names']:
+                forenames = ' '.join(names['private']['forenames'])
+                surname = names['private']['surname']
+                returned_names.append(forenames + ' ' + surname)
+            result.append({
+                'names': returned_names,
+                'class_of_charge': text['class_of_charge'],
+                'number': number,
+                'date': date
+            })"""
+        result = (json.loads(response.text))
+    else:
+        return Response(json.dumps(response.text), status=response.status_code, mimetype='application/json')
+
+    print('******the result is******', result)
+    return Response(json.dumps(result), status=response.status_code, mimetype='application/json')
+
+
+
 @app.route('/searches', methods=['POST'])
 def post_search():
     data = request.get_json(force=True)
