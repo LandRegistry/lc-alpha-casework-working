@@ -9,7 +9,7 @@ import requests
 from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
-    amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application
+    amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, get_registration_details
 from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
@@ -215,6 +215,7 @@ def update_application(appn_id):
             appn = amend_application(cursor, appn_id, data)
         elif action == 'cancel':
             appn = cancel_application(cursor, appn_id, data)
+            print("appn : ", str(appn))
         else:
             return Response("Invalid action", status=400)
         complete(cursor)
@@ -1002,4 +1003,9 @@ def get_searches():
     response = requests.post(app.config['LAND_CHARGES_URI'] + '/request_search_details', data=search_data,
                              headers={'Content-Type': 'application/json'})
     data = json.loads(response.content.decode('utf-8'))
+    return Response(json.dumps(data), status=200, mimetype='application/json')
+
+@app.route('/registrations/<reg_date>/<reg_name>', methods=['GET'])
+def get_registration(reg_date, reg_name):
+    data = get_registration_details(reg_date, reg_name)
     return Response(json.dumps(data), status=200, mimetype='application/json')
