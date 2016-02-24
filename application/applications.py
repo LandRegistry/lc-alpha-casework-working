@@ -113,28 +113,31 @@ def update_application_details(cursor, appn_id, data):
 
 
 def delete_application(cursor, appn_id):
+    logging.info('DELETE from pending_application where id=%s', appn_id)
     cursor.execute('DELETE from pending_application where id=%(id)s', {'id': appn_id})
     return cursor.rowcount
 
 
 def amend_application(cursor, appn_id, data):
+    logging.debug(data)
     reg_no = data['regn_no']
     date = data['registration']['date']
+    doc_id = data['document_id']
+    del data['regn_no']
+    del data['registration']
+    del data['document_id']
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
     headers = {'Content-Type': 'application/json'}
     response = requests.put(url, data=json.dumps(data), headers=headers)
     if response.status_code != 200:
         return response
 
-    # Archive amendment docs under new ID
     regns = response.json()
-    date_string = datetime.now().strftime("%Y_%m_%d")
-    for reg_no in regns['new_registrations']:
-        url = app.config['DOCUMENT_API_URI'] + '/archive/' + date_string + '/' + str(reg_no)
-        body = {'document_id': data['document_id']}
-        doc_response = requests.post(url, data=json.dumps(body), headers=headers)
-        if doc_response.status_code != 200:
-            return doc_response
+
+    for regn in regns['new_registrations']:
+        number = regn['number']
+        date = regn['date']
+        store_image_for_later(cursor, doc_id, number, date)
 
     # Delete work-item
     delete_application(cursor, appn_id)
@@ -187,7 +190,7 @@ def create_lc_registration(data):
             'surname': name_data['private']['surname']
         }
     elif name['type'] == "County Council" or name['type'] == "Parish Council" or name['type'] == "Other Council":
-        name['local'] ={
+        name['local'] = {
             'name': name_data['local']['name'],
             'area': name_data['local']['area']
         }
@@ -245,10 +248,10 @@ def complete_application(cursor, appn_id, data):
     # Submit registration
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
-
-    print('!!!!!!!data in complete application!!!!!!', data)
-
-    response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
+    if 'lc_register_details' in data:
+        response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
+    else:  # banks registration
+        response = requests.post(url, data=json.dumps(data), headers=headers)
     if response.status_code != 200:
         logging.error(response.text)
         raise RuntimeError("Unexpected response from /registrations: {}".format(response.status_code))
@@ -259,32 +262,19 @@ def complete_application(cursor, appn_id, data):
     insert_result_row(cursor, regns['request_id'], 'registration')
     # TODO error handling on inserting print job row
 
-
     # Archive document
     document_id = data['application_data']['document_id']
-    pages = get_document(cursor, document_id)
+    # pages = get_document(cursor, document_id)
 
-    for regn in regns['new_registrations']:
+    if data['form'] == 'K6':
+        reg_type = 'priority_notices'
+    else:
+        reg_type = 'new_registrations'
+
+    for regn in regns[reg_type]:
         number = regn['number']
         date = regn['date']
         store_image_for_later(cursor, document_id, number, date)
-
-    # logging.warn("TEMPORARY LEGDB SUPRESSION")
-    # if False:
-    #     for regn in regns['new_registrations']:
-    #         number = regn['number']
-    #         date = regn['date']
-    #         for page in pages:
-    #             image = get_image(cursor, document_id, page)
-    #             url = "{}/images/{}/{}/{}".format(app.config['LEGACY_ADAPTER_URI'],
-    #                                               date,
-    #                                               number,
-    #                                               'A4')
-    #             headers = {'Content-Type': image['mimetype']}
-    #             doc_response = requests.put(url, data=image['bytes'], headers=headers)
-    #             if doc_response.status_code != 200:
-    #                 # TODO: error!
-    #                 pass
 
     # Delete work-item
     delete_application(cursor, appn_id)
@@ -323,3 +313,149 @@ def insert_result_row(cursor, request_id, result_type):
     except:
         raise
     return "success"
+
+
+def cancel_application(cursor, appn_id, data):
+    # Cancel registration
+    url = app.config['LAND_CHARGES_URI'] + '/cancellations'
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+    if response.status_code != 200:
+        logging.error(response.text)
+        raise RuntimeError("Unexpected response from /cancellations: {}".format(response.status_code))
+
+    regns = response.json()
+
+    # Insert print job
+    # insert_result_row(cursor, regns['request_id'], 'registration')
+    # TODO error handling on inserting print job row
+
+    logging.debug("data = ", str(data))
+    # Archive document
+    document_id = data['document_id']
+    # pages = get_document(cursor, document_id)
+    for regn in regns['cancellations']:
+        number = regn['number']
+        date = regn['date']
+        store_image_for_later(cursor, document_id, number, date)
+
+    # Delete work-item
+    delete_application(cursor, appn_id)
+
+    # return regn nos
+    return regns
+
+
+def get_registration_details(reg_date, reg_no):
+    url = app.config['LAND_CHARGES_URI'] + '/registrations/' + reg_date + '/' + reg_no
+    response = requests.get(url)
+    if response.status_code != 200:
+        return response
+    data = response.json()
+    converted_data = convert_response_data(data)
+    return converted_data
+
+
+def convert_response_data(api_data):
+    result = {'status': api_data['status'], 'class': convert_class_of_charge(api_data['class_of_charge']),
+              'estate_owner': get_estate_owner(api_data['parties'][0]['names'][0]),
+              'estate_owner_ind': api_data['parties'][0]['names'][0]['type'],
+              'occupation': get_occupation(api_data['parties'][0]),
+              'additional_info': get_additional_info(api_data)
+              }
+    if 'particulars' in api_data:
+        if 'counties' in api_data['particulars']:
+            result['county'] = api_data['particulars']['counties']
+        if 'district' in api_data['particulars']:
+            result['county'] = api_data['particulars']['district']
+        if 'short_description' in api_data['particulars']:
+            result['short_description'] = api_data['particulars']['description']
+    return result
+
+
+def convert_class_of_charge(class_of_charge):
+    charge_class = {
+        "C1": "C(I)", "C2": "C(II)", "C3": "C(III)", "C4": "C(IV)",
+        "D1": "D(I)", "D2": "D(II)", "D3": "D(III)",
+        "C(I)": "C1", "C(II)": "C2", "C(III)": "C3", "C(IV)": "C4",
+        "D(I)": "D1", "D(II)": "D2", "D(III)": "D3"
+    }
+
+    if class_of_charge in charge_class:
+        return charge_class.get(class_of_charge)
+    else:
+        return class_of_charge
+
+
+def get_estate_owner(name):
+    name_for_screen = {'private': {'forenames': [''], 'surname': ''},
+                       'company': '',
+                       'local': {'name': '', 'area': ''},
+                       'complex': {"name": '', "number": ''},
+                       'other': ''}
+
+    if name['type'] == 'Private Individual':
+        name_for_screen['private'] = {'forenames': name['private']['forenames'], 'surname': name['private']['surname']}
+    elif name['type'] == 'Limited Company':
+        name_for_screen['company'] = name['company']
+    elif name['type'] == 'County Council':
+        name_for_screen['local'] = {'name': name['local']['name'], 'area': name['local']['area']}
+    elif name['type'] == 'Parish Council':
+        name_for_screen['local'] = {'name': name['local']['name'], 'area': name['local']['area']}
+    elif name['type'] == 'Other Council':
+        name_for_screen['local'] = {'name': name['local']['name'], 'area': name['local']['area']}
+    elif name['type'] == 'Development Corporation':
+        name_for_screen['other'] = name['other']
+    elif name['type'] == 'Complex Name':
+        name_for_screen['complex'] = {"name": name['complex']['name'], "number": name['complex']['number']}
+    elif name['type'] == 'Other':
+        name_for_screen['company'] = name['company']
+    return name_for_screen
+
+
+def get_party_name(data):
+        party = {
+            "type": "Estate Owner",
+            "names": []}
+
+        name = {"type": data['estate_owner_ind']}
+
+        if name['type'] == 'Private Individual':
+            name['private'] = {
+                'forenames': data['estate_owner']['private']['forenames'],
+                'surname': data['estate_owner']['private']['surname']}
+        elif name['type'] == "County Council" or name['type'] == "Parish Council" or name['type'] == "Other Council":
+            name['local'] = {
+                'name': data['estate_owner']['local']['name'],
+                'area': data['estate_owner']['local']['area']}
+        elif name['type'] == "Development Corporation" or name['type'] == "Other":
+            name['other'] = data['estate_owner']['other']
+        elif name['type'] == "Limited Company":
+            name['company'] = data['estate_owner']['company']
+        elif name['type'] == "Complex Name":
+            name['complex'] = {
+                'name': data['estate_owner']['complex']['name'],
+                'number': data['estate_owner']['complex']['number']}
+        else:
+            raise RuntimeError("Unexpected name type: {}".format(name['type']))
+
+        party['names'].append(name)
+        party['occupation'] = data['occupation']
+
+        return party
+
+
+def get_additional_info(response):
+    info = ''
+    if 'additional_information' in response:
+        info = response['additional_information']
+
+    return info
+
+
+def get_occupation(party):
+    occupation = ''
+    if 'occupation' in party:
+        occupation = party['occupation']
+
+    return occupation

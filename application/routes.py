@@ -9,7 +9,7 @@ import requests
 from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
-    amend_application, set_lock_ind, clear_lock_ind, insert_result_row
+    amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, get_registration_details
 from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
@@ -130,7 +130,7 @@ def create_application():
         logging.debug('something is missing in request')
         return Response(status=400)
     if data['application_data'] == "":
-        data['application_data'] = {"document_id": data['document_id']} #to get incoming scanned docs to display
+        data['application_data'] = {"document_id": data['document_id']}  # to get incoming scanned docs to display
 
     cursor = connect()
     try:
@@ -138,6 +138,7 @@ def create_application():
     finally:
         complete(cursor)
     return Response(json.dumps({'id': item_id}), status=200, mimetype='application/json')
+
 
 @app.route('/applications/<appn_id>/lock', methods=['POST'])
 def lock_application(appn_id):
@@ -209,21 +210,18 @@ def update_application(appn_id):
             update_application_details(cursor, appn_id, data)
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
-
-
             appn = complete_application(cursor, appn_id, data)
-
-
         elif action == 'amend' or action == 'rectify':
             appn = amend_application(cursor, appn_id, data)
+        elif action == 'cancel':
+            appn = cancel_application(cursor, appn_id, data)
+            print("appn : ", str(appn))
         else:
             return Response("Invalid action", status=400)
         complete(cursor)
     except:
         rollback(cursor)
         raise
-
-
     return Response(json.dumps(appn), status=200)
 
 # ============ FORMS ==============
@@ -329,8 +327,8 @@ def change_image(doc_id, page_no, size):
             form_type = recognise(bytes)
             # TODO: if form_type is different to the original type, need to consider updating any page 2,3 etc...
         else:
-            cursor.execute('select form_type from documents where document_id=%(doc_id)s and page = 1', {"doc_id": doc_id})
-
+            cursor.execute('select form_type from documents where document_id=%(doc_id)s and page = 1',
+                           {"doc_id": doc_id})
             row = cursor.fetchone()
             if row is None:
                 return Response(status=404)
@@ -495,17 +493,56 @@ def get_complex_names_post():
 def insert_complex_name(name, number):
     logging.debug("Complex insert")
     today = datetime.now().strftime('%Y-%m-%d')
-    data = {"amend": None,
+    data = {"amend": " ",
             "date": today,
             "number": number,
-            "source": None,
-            "uid": None,  # TODO: what is this going to be?
+            "source": " ",
+            "uid": " ",  # TODO: what is this going to be?
             "name": name
             }
     uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names'
     response = requests.post(uri, data=json.dumps(data), headers={'Content-Type': 'application/json'})
     logging.info('POST {} -- {}'.format(uri, response))
     result = {'response': response.text}
+    return Response(json.dumps(result), status=response.status_code, mimetype='application/json')
+
+
+@app.route('/court_check/<court>/<ref>/<year>', methods=['GET'])
+def court_ref_existence_check(court, ref, year):
+    logging.debug("Court existence checking")
+
+    url = app.config['LAND_CHARGES_URI'] + '/court_check/' + court + '/' + ref + '/' + year
+    response = requests.get(url)
+    return Response(response.text, status=response.status_code, mimetype='application/json')
+
+
+@app.route('/original', methods=['POST'])
+def get__originals():
+    data = request.get_json(force=True)
+    logging.debug(json.dumps(data))
+
+    date = data['date']
+    number = data['number']
+    url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + number
+    response = requests.get(url)
+    if response.status_code == 200:
+        """ returned_names = []
+            text = json.loads(response.text)
+            for names in text['parties'][0]['names']:
+                forenames = ' '.join(names['private']['forenames'])
+                surname = names['private']['surname']
+                returned_names.append(forenames + ' ' + surname)
+            result.append({
+                'names': returned_names,
+                'class_of_charge': text['class_of_charge'],
+                'number': number,
+                'date': date
+            })"""
+        result = (json.loads(response.text))
+    else:
+        return Response(json.dumps(response.text), status=response.status_code, mimetype='application/json')
+
+    print('******the result is******', result)
     return Response(json.dumps(result), status=response.status_code, mimetype='application/json')
 
 
@@ -534,14 +571,13 @@ def post_search():
     response_data = response.json()
 
     cursor = connect()
-    for id in response_data:
-        uri = app.config['LAND_CHARGES_URI'] + '/search_type/'+str(id)
+    for req_id in response_data:
+        uri = app.config['LAND_CHARGES_URI'] + '/search_type/'+str(req_id)
         response = requests.get(uri)
         resp_data = response.json()
         res_type = resp_data['search_type']
-        insert_result_row(cursor, id, res_type)
+        insert_result_row(cursor, req_id, res_type)
     complete(cursor)
-
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
@@ -554,17 +590,15 @@ def get_office_copy():
         return_pdf = True
     else:
         return_pdf = False
-
-
     uri = app.config['LAND_CHARGES_URI'] + '/office_copy' + '?class=' + class_of_charge + '&reg_no=' + reg_no + \
-          '&date=' + date
+        '&date=' + date
     response = requests.get(uri, headers={'Content-Type': 'application/json'})
     logging.info('GET {} -- {}'.format(uri, response.text))
     data = json.loads(response.text)
     size = (992, 1430)
-    clWhite = (255, 255, 255)
-    clBlack = (0, 0, 0)
-    clGrey = (178, 178, 178)
+    cl_white = (255, 255, 255)
+    cl_black = (0, 0, 0)
+    cl_grey = (178, 178, 178)
     arial = 'arial.ttf'
     arialbold = 'arialbd.ttf'
     fs_main = 28
@@ -573,102 +607,104 @@ def get_office_copy():
     fs_text = 16
     fs_footer = 12
 
-    im = Image.new('RGB', size, clWhite)
+    im = Image.new('RGB', size, cl_white)
     draw = ImageDraw.Draw(im)
     cursor_pos = 50
-    draw_text(draw, (140, cursor_pos), 'Application for Registration of Petition in Bankruptcy', arialbold, fs_main, clBlack)
+    draw_text(draw, (140, cursor_pos), 'Application for Registration of Petition in Bankruptcy', arialbold, fs_main, 
+              cl_black)
     cursor_pos += 50
     draw_text(draw, (170, cursor_pos), 'This is an official copy of the data provided by the Insolvency',
-              arial, fs_sub, clBlack)
+              arial, fs_sub, cl_black)
     cursor_pos += 30
-    draw_text(draw, (210, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, fs_sub, clBlack)
+    draw_text(draw, (210, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, fs_sub, cl_black)
     cursor_pos += 80
-    draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, fs_sub_title, clBlack)
+    draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, fs_sub_title, cl_black)
     cursor_pos += 30
-    draw.line((100,cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
+    draw.line((100, cursor_pos, (im.size[1]-300), cursor_pos), fill=0)
     cursor_pos += 30
     label_pos = 150
     data_pos = 400
-    draw_text(draw, (label_pos, cursor_pos), 'Reference: ', arial, fs_text, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['application_ref'], arial, fs_text, clBlack)
+    draw_text(draw, (label_pos, cursor_pos), 'Reference: ', arial, fs_text, cl_black)
+    draw_text(draw, (data_pos, cursor_pos), data['application_ref'], arial, fs_text, cl_black)
     cursor_pos += 30
-    draw_text(draw, (label_pos, cursor_pos), 'Key Number: ' , arial, fs_text, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['key_number'], arial, fs_text, clBlack)
+    draw_text(draw, (label_pos, cursor_pos), 'Key Number: ', arial, fs_text, cl_black)
+    draw_text(draw, (data_pos, cursor_pos), data['key_number'], arial, fs_text, cl_black)
     cursor_pos += 30
-    draw_text(draw, (label_pos, cursor_pos), 'Date: ', arial, fs_text, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['application_date'], arial, fs_text, clBlack)
+    draw_text(draw, (label_pos, cursor_pos), 'Date: ', arial, fs_text, cl_black)
+    draw_text(draw, (data_pos, cursor_pos), data['application_date'], arial, fs_text, cl_black)
     cursor_pos += 50
-    draw_text(draw, (100, cursor_pos), 'Particulars of Debtor:', arialbold, fs_sub_title, clBlack)
+    draw_text(draw, (100, cursor_pos), 'Particulars of Debtor:', arialbold, fs_sub_title, cl_black)
 
     cursor_pos += 30
-    draw.line((100, cursor_pos,(im.size[1]-300),cursor_pos),fill=0)
+    draw.line((100, cursor_pos, (im.size[1]-300), cursor_pos), fill=0)
 
     if 'debtor_names' in data:
         name_count = 1
         for debtor_name in data['debtor_names']:
             if name_count == 1:
                 cursor_pos += 30
-                draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, fs_text, clBlack)
+                draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, fs_text, cl_black)
             elif name_count == 2:
                 cursor_pos += 30
-                draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, fs_text, clBlack)
+                draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, fs_text, cl_black)
             else:
                 cursor_pos += 25
             debtor_forenames = ""
             for forenames in debtor_name['forenames']:
                 debtor_forenames += forenames + " "
             debtor_forenames = debtor_forenames.strip()
-            draw_text(draw, (data_pos, cursor_pos), debtor_forenames + " " + debtor_name['surname'], arial, fs_text, clBlack)
+            draw_text(draw, (data_pos, cursor_pos), debtor_forenames + " " + debtor_name['surname'], arial,
+                      fs_text, cl_black)
             name_count += 1
     # cursor_pos += 50
     # draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
     cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Date of Birth: ', arial, fs_text, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['date_of_birth'], arial, fs_text, clBlack)
+    draw_text(draw, (150, cursor_pos), 'Date of Birth: ', arial, fs_text, cl_black)
+    draw_text(draw, (data_pos, cursor_pos), data['date_of_birth'], arial, fs_text, cl_black)
     cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Gender: ', arial, fs_text, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['gender'], arial, fs_text, clBlack)
+    draw_text(draw, (150, cursor_pos), 'Gender: ', arial, fs_text, cl_black)
+    draw_text(draw, (data_pos, cursor_pos), data['gender'], arial, fs_text, cl_black)
     cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, fs_text, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, fs_text, clBlack)
+    draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, fs_text, cl_black)
+    draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, fs_text, cl_black)
     cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, fs_text, clBlack)
-    draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, fs_text, clBlack)
+    draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, fs_text, cl_black)
+    draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, fs_text, cl_black)
     cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Residence: ', arial, fs_text, clBlack)
-    if data['residence_withheld'] == True:
-        draw_text(draw, (data_pos, cursor_pos), "DEBTORS ADDRESS IS STATED TO BE UNKNOWN", arial, fs_text, clBlack)
-    else: # print debtors addresses
-        cursor_pos -=40
+    draw_text(draw, (150, cursor_pos), 'Residence: ', arial, fs_text, cl_black)
+    if data['residence_withheld']:
+        draw_text(draw, (data_pos, cursor_pos), "DEBTORS ADDRESS IS STATED TO BE UNKNOWN", arial, fs_text, cl_black)
+    else:
+        cursor_pos -= 40
         for address in data['residence']:
             cursor_pos += 40
             for address_line in address['address_lines']:
-                draw_text(draw, (data_pos, cursor_pos), address_line, arial, fs_text, clBlack)
+                draw_text(draw, (data_pos, cursor_pos), address_line, arial, fs_text, cl_black)
                 cursor_pos += 25
-            draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, clBlack)
+            draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, cl_black)
             cursor_pos += 25
-            draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, clBlack)
+            draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
     cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Business Address: ', arial, fs_text, clBlack)
+    draw_text(draw, (150, cursor_pos), 'Business Address: ', arial, fs_text, cl_black)
     if 'business_address' in data:
-        draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, fs_text, clBlack)
+        draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, fs_text, cl_black)
     cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Investment Property: ', arial, fs_text, clBlack)
+    draw_text(draw, (150, cursor_pos), 'Investment Property: ', arial, fs_text, cl_black)
     if 'investment_property' in data:
-        draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, fs_text, clBlack)
+        draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, fs_text, cl_black)
     cursor_pos = 1250
     left_pos = 50
-    draw_text(draw, (left_pos, cursor_pos), 'Land Registry', arial, fs_footer, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'Land Registry', arial, fs_footer, cl_grey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Land Charges Department', arial, fs_footer, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'Land Charges Department', arial, fs_footer, cl_grey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Seaton Court', arial, fs_footer, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'Seaton Court', arial, fs_footer, cl_grey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), '2 William Prance Road', arial, fs_footer, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), '2 William Prance Road', arial, fs_footer, cl_grey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Plymouth', arial, fs_footer, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'Plymouth', arial, fs_footer, cl_grey)
     cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'PL6 5WS', arial, fs_footer, clGrey)
+    draw_text(draw, (left_pos, cursor_pos), 'PL6 5WS', arial, fs_footer, cl_grey)
     del draw
     image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/images')
     file_name = 'officeopy_'+class_of_charge + '_' + reg_no + '_' + date
@@ -679,7 +715,7 @@ def get_office_copy():
     else:
         TiffImagePlugin.WRITE_LIBTIFF = True
         file_path = os.path.join(image_path, 'output.tiff')
-        im.save(file_path, compression = "tiff_lzw", resolution=120.0)
+        im.save(file_path, compression="tiff_lzw", resolution=120.0)
         TiffImagePlugin.WRITE_LIBTIFF = False
         file_name += '.tiff'
 
@@ -690,14 +726,14 @@ def get_office_copy():
     return response
 
 
-
 def draw_text(canvas, text_pos, text, font_name, font_size, font_color):
     fonts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/static/fonts')
     fnt = ImageFont.truetype(os.path.join(fonts_path, font_name), font_size)
-    canvas.text(text_pos, text, font_color, font=fnt )
+    canvas.text(text_pos, text, font_color, font=fnt)
     return "ok"
 
 # ========= Dev Routes ==============
+
 
 @app.route('/forms', methods=['DELETE'])
 def delete():
@@ -924,7 +960,7 @@ def get_results():
         cursor.execute("SELECT id, request_id, res_type " +
                        "FROM results Where print_status <> 'Y' ORDER BY res_type ")
         rows = cursor.fetchall()
-        logging.debug("row count = " + str(len(rows)) )
+        logging.debug("row count = " + str(len(rows)))
         res_list = []
         rowcount = 1
         for row in rows:
@@ -938,7 +974,7 @@ def get_results():
     return Response(json.dumps(res_list), status=200, mimetype='application/json')
 
 
-#insert a print job row on the result table
+# insert a print job row on the result table
 @app.route('/results/<request_id>/<result_type>', methods=["POST"])
 def insert_result(request_id, result_type):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
@@ -964,3 +1000,45 @@ def insert_b2b_form():
         rollback(cursor)
         raise
     return Response(status=200)
+
+
+@app.route('/reprints/<reprint_type>', methods=['GET'])
+def reprints(reprint_type):
+    request_id = ''
+    if reprint_type == 'registration':
+        registration_no = request.args['registration_no']
+        registration_date = request.args['registration_date']
+        url = app.config['LAND_CHARGES_URI'] + '/request_details?reprint_type=' + reprint_type
+        url += '&registration_no=' + registration_no + '&registration_date=' + registration_date
+        response = requests.get(url)
+        data = json.loads(response.content.decode('utf-8'))
+        if "request_id" not in data:
+            return "invalid request_id for " + registration_no + ' ' + registration_date
+        request_id = data['request_id']
+    elif reprint_type == 'search':
+        request_id = request.args['request_id']
+    if request_id == '':
+        return Response("Error: could not determine request id", status=400)
+    # for the time being call reprint on result-generate. this probably needs moving into casework-api
+    url = app.config['RESULT_GENERATE_URI'] + '/reprints?request=' + str(request_id)
+    response = requests.get(url)
+    return send_file(BytesIO(response.content), as_attachment=False, attachment_filename='reprint.pdf',
+                     mimetype='application/pdf')
+
+
+@app.route('/reprints/search', methods=['POST'])
+def get_searches():
+    search_data = request.data
+    response = requests.post(app.config['LAND_CHARGES_URI'] + '/request_search_details', data=search_data,
+                             headers={'Content-Type': 'application/json'})
+    data = json.loads(response.content.decode('utf-8'))
+    return Response(json.dumps(data), status=200, mimetype='application/json')
+
+
+@app.route('/registrations/<reg_date>/<reg_name>', methods=['GET'])
+def get_registration(reg_date, reg_name):
+    data = get_registration_details(reg_date, reg_name)
+    if 'status_code' in data:
+        if data.status_code != 200:
+            return Response(data, status=data.status_code, mimetype='application/json')
+    return Response(json.dumps(data), status=200, mimetype='application/json')
