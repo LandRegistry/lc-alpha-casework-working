@@ -248,7 +248,6 @@ def complete_application(cursor, appn_id, data):
     # Submit registration
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
     headers = {'Content-Type': 'application/json'}
-
     if 'lc_register_details' in data:
         response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
     else:  # banks registration

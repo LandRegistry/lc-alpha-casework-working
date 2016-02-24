@@ -546,7 +546,6 @@ def get__originals():
     return Response(json.dumps(result), status=response.status_code, mimetype='application/json')
 
 
-
 @app.route('/searches', methods=['POST'])
 def post_search():
     data = request.get_json(force=True)
@@ -1036,7 +1035,10 @@ def get_searches():
     data = json.loads(response.content.decode('utf-8'))
     return Response(json.dumps(data), status=200, mimetype='application/json')
 
+
 @app.route('/registrations/<reg_date>/<reg_name>', methods=['GET'])
 def get_registration(reg_date, reg_name):
     data = get_registration_details(reg_date, reg_name)
+    if data.status_code != 200:
+        return Response(data, status=data.status_code, mimetype='application/json')
     return Response(json.dumps(data), status=200, mimetype='application/json')
