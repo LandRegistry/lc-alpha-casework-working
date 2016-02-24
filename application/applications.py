@@ -120,6 +120,10 @@ def delete_application(cursor, appn_id):
 
 def amend_application(cursor, appn_id, data):
     logging.debug(data)
+    if data['registration']['update_registration']['type'] == 'Amendment':
+        print('blahblahblahblah')
+        # TODO: will need to call registrations for WOB and PAB separately
+
     reg_no = data['regn_no']
     date = data['registration']['date']
     doc_id = data['document_id']
@@ -251,7 +255,7 @@ def complete_application(cursor, appn_id, data):
     if 'lc_register_details' in data:
         response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
     else:  # banks registration
-        response = requests.post(url, data=json.dumps(data), headers=headers)
+        response = requests.post(url, data=json.dumps(data['registration']), headers=headers)
     if response.status_code != 200:
         logging.error(response.text)
         raise RuntimeError("Unexpected response from /registrations: {}".format(response.status_code))
