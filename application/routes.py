@@ -1029,7 +1029,6 @@ def reprints(reprint_type):
 @app.route('/reprints/search', methods=['POST'])
 def get_searches():
     search_data = request.data
-    print("search data: ", str(search_data))
     response = requests.post(app.config['LAND_CHARGES_URI'] + '/request_search_details', data=search_data,
                              headers={'Content-Type': 'application/json'})
     data = json.loads(response.content.decode('utf-8'))
@@ -1039,6 +1038,7 @@ def get_searches():
 @app.route('/registrations/<reg_date>/<reg_name>', methods=['GET'])
 def get_registration(reg_date, reg_name):
     data = get_registration_details(reg_date, reg_name)
-    if data.status_code != 200:
-        return Response(data, status=data.status_code, mimetype='application/json')
+    if 'status_code' in data:
+        if data.status_code != 200:
+            return Response(data, status=data.status_code, mimetype='application/json')
     return Response(json.dumps(data), status=200, mimetype='application/json')

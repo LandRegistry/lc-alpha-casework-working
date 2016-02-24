@@ -357,17 +357,19 @@ def get_registration_details(reg_date, reg_no):
 
 
 def convert_response_data(api_data):
-
     result = {'status': api_data['status'], 'class': convert_class_of_charge(api_data['class_of_charge']),
-              'county': api_data['particulars']['counties'],
-              'district': api_data['particulars']['district'],
-              'short_description': api_data['particulars']['description'],
               'estate_owner': get_estate_owner(api_data['parties'][0]['names'][0]),
               'estate_owner_ind': api_data['parties'][0]['names'][0]['type'],
               'occupation': get_occupation(api_data['parties'][0]),
               'additional_info': get_additional_info(api_data)
               }
-
+    if 'particulars' in api_data:
+        if 'counties' in api_data['particulars']:
+            result['county'] = api_data['particulars']['counties']
+        if 'district' in api_data['particulars']:
+            result['county'] = api_data['particulars']['district']
+        if 'short_description' in api_data['particulars']:
+            result['short_description'] = api_data['particulars']['description']
     return result
 
 
@@ -382,7 +384,7 @@ def convert_class_of_charge(class_of_charge):
     if class_of_charge in charge_class:
         return charge_class.get(class_of_charge)
     else:
-        return type
+        return class_of_charge
 
 
 def get_estate_owner(name):
