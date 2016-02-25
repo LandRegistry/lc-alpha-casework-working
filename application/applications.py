@@ -121,18 +121,25 @@ def delete_application(cursor, appn_id):
 def amend_application(cursor, appn_id, data):
     logging.debug(data)
     if data['registration']['update_registration']['type'] == 'Amendment':
-        print('blahblahblahblah')
-        # TODO: will need to call registrations for WOB and PAB separately
-
-    reg_no = data['regn_no']
-    date = data['registration']['date']
-    doc_id = data['document_id']
-    del data['regn_no']
-    del data['registration']
-    del data['document_id']
+        doc_id = data['application_data']
+        reg_data = data['registration']
+        if 'wob_original' in data:
+            reg_no = data['wob_original']['number']
+            date = data['wob_original']['date']
+        else:
+            reg_no = data['pab_original']['number']
+            date = data['pab_original']['date']
+    else:  # rectification
+        reg_no = data['regn_no']
+        date = data['registration']['date']
+        doc_id = data['document_id']
+        del data['regn_no']
+        del data['registration']
+        del data['document_id']
+        reg_data = data
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
     headers = {'Content-Type': 'application/json'}
-    response = requests.put(url, data=json.dumps(data), headers=headers)
+    response = requests.put(url, data=json.dumps(reg_data), headers=headers)
     if response.status_code != 200:
         return response
 
@@ -145,6 +152,8 @@ def amend_application(cursor, appn_id, data):
 
     # Delete work-item
     delete_application(cursor, appn_id)
+
+    # TODO: need to cancel PAB registrations if WOB was provided for amendment!!
 
     # return regn nos
     return regns
@@ -371,7 +380,7 @@ def convert_response_data(api_data):
         if 'counties' in api_data['particulars']:
             result['county'] = api_data['particulars']['counties']
         if 'district' in api_data['particulars']:
-            result['county'] = api_data['particulars']['district']
+            result['district'] = api_data['particulars']['district']
         if 'short_description' in api_data['particulars']:
             result['short_description'] = api_data['particulars']['description']
     return result
