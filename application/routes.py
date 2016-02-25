@@ -572,7 +572,7 @@ def post_search():
 
     cursor = connect()
     for req_id in response_data:
-        uri = app.config['LAND_CHARGES_URI'] + '/search_type/'+str(req_id)
+        uri = app.config['LAND_CHARGES_URI'] + '/search_type/' + str(req_id)
         response = requests.get(uri)
         resp_data = response.json()
         res_type = resp_data['search_type']
