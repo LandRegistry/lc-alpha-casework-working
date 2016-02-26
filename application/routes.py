@@ -1037,8 +1037,8 @@ def get_searches():
 
 @app.route('/registrations/<reg_date>/<reg_name>', methods=['GET'])
 def get_registration(reg_date, reg_name):
-    data = get_registration_details(reg_date, reg_name)
-    if 'status_code' in data:
-        if data.status_code != 200:
-            return Response(data, status=data.status_code, mimetype='application/json')
-    return Response(json.dumps(data), status=200, mimetype='application/json')
+    response = get_registration_details(reg_date, reg_name)
+    if response['status'] != 200:
+        return Response(json.dumps(response['data']), status=response['status'], mimetype='application/json')
+    else:
+        return Response(json.dumps(response['data']), status=200, mimetype='application/json')
