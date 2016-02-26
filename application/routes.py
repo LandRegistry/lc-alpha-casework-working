@@ -9,7 +9,7 @@ import requests
 from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
-    amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, get_registration_details
+    amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, get_registration_details, store_image_for_later
 from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
@@ -404,6 +404,30 @@ def get_form_image(doc_id, page_no):
     return Response(data['bytes'], status=200, mimetype=data['mimetype'])
 
 
+@app.route('/registered_forms/<date>/<reg_no>', methods=['PUT'])
+def dev_put_reg_form(date, reg_no):
+
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    data = request.get_json(force=True)
+    store_image_for_later(cursor, data['id'], reg_no, date)
+    complete(cursor)
+    return Response(status=200)
+
+
+@app.route('/registered_forms', methods=['DELETE'])
+def remove_reg_forms():
+
+    if not app.config['ALLOW_DEV_ROUTES']:
+        return Response(status=403)
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute('DELETE FROM registered_documents')
+    complete(cursor)
+    return Response(status=200)
+
+
+
 @app.route('/registered_forms/<date>/<reg_no>', methods=['GET'])
 def get_registered_forms(date, reg_no):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
@@ -433,6 +457,8 @@ def delete_all_reg_forms(date, reg_no):
                            'no': reg_no, 'date': date
                        })
         return Response(status=200)
+
+    # TODO: also remove form from documents table?
     finally:
         complete(cursor)
 
