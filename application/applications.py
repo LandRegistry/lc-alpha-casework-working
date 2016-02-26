@@ -207,7 +207,7 @@ def create_lc_registration(data):
             'name': name_data['local']['name'],
             'area': name_data['local']['area']
         }
-    elif name['type'] == "Development Corporation" or name['type'] == "Other":
+    elif name['type'] == "Development Corporation" or name['type'] == "Other" or name['type'] == 'Coded Name':
         name['other'] = name_data['other']
     elif name['type'] == "Limited Company":
         name['company'] = name_data['company']
