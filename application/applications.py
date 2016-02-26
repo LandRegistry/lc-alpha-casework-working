@@ -363,10 +363,10 @@ def get_registration_details(reg_date, reg_no):
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + reg_date + '/' + reg_no
     response = requests.get(url)
     if response.status_code != 200:
-        return response
+        return {"data": "could not find registration for " + reg_no + " " + reg_date, "status": response.status_code}
     data = response.json()
     converted_data = convert_response_data(data)
-    return converted_data
+    return {"data": converted_data, "status": response.status_code}
 
 
 def convert_response_data(api_data):
