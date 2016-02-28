@@ -361,14 +361,9 @@ def cancel_application(cursor, appn_id, data):
     if response.status_code != 200:
         logging.error(response.text)
         raise RuntimeError("Unexpected response from /cancellations: {}".format(response.status_code))
-
     regns = response.json()
-
     # Insert print job
-    # insert_result_row(cursor, regns['request_id'], 'registration')
-    # TODO error handling on inserting print job row
-
-    logging.debug("data = ", str(data))
+    insert_result_row(cursor, regns['request_id'], 'registration')
     # Archive document
     document_id = data['document_id']
     # pages = get_document(cursor, document_id)
@@ -376,11 +371,8 @@ def cancel_application(cursor, appn_id, data):
         number = regn['number']
         date = regn['date']
         store_image_for_later(cursor, document_id, number, date)
-
     # Delete work-item
     delete_application(cursor, appn_id)
-
-    # return regn nos
     return regns
 
 
@@ -408,6 +400,8 @@ def convert_response_data(api_data):
             result['district'] = api_data['particulars']['district']
         if 'short_description' in api_data['particulars']:
             result['short_description'] = api_data['particulars']['description']
+    if 'amends_registration' in api_data:
+        result['amends_registration'] = api_data['amends_registration']
     return result
 
 
@@ -455,7 +449,6 @@ def get_party_name(data):
         party = {
             "type": "Estate Owner",
             "names": []}
-
         name = {"type": data['estate_owner_ind']}
 
         if name['type'] == 'Private Individual':
