@@ -398,7 +398,7 @@ def convert_response_data(api_data):
             result['county'] = api_data['particulars']['counties']
         if 'district' in api_data['particulars']:
             result['district'] = api_data['particulars']['district']
-        if 'short_description' in api_data['particulars']:
+        if 'description' in api_data['particulars']:
             result['short_description'] = api_data['particulars']['description']
     if 'amends_registration' in api_data:
         result['amends_registration'] = api_data['amends_registration']
