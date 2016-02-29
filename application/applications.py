@@ -6,6 +6,16 @@ import logging
 import re
 from datetime import datetime
 import logging
+from flask import request
+
+
+def get_headers(headers=None):
+    if headers is None:
+        headers = {}
+
+    if 'X-Transaction-ID' in request.headers:
+        headers['X-Transaction-ID'] = request.headers['X-Transaction-ID']
+    return headers
 
 
 def insert_new_application(cursor, data):
@@ -151,7 +161,7 @@ def amend_application(cursor, appn_id, data):
 
     print('***5')
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
-    headers = {'Content-Type': 'application/json'}
+    headers = get_headers({'Content-Type': 'application/json'})
     response = requests.put(url, data=json.dumps(reg_data), headers=headers)
     print('***6', response.status_code)
     if response.status_code != 200:
@@ -172,7 +182,7 @@ def amend_application(cursor, appn_id, data):
         reg_data['pab_amendment'] = {'reg_no': regns['new_registrations'][0]['number'],
                                      'date': regns['new_registrations'][0]['date']}
         url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
-        headers = {'Content-Type': 'application/json'}
+        headers = get_headers({'Content-Type': 'application/json'})
         response = requests.put(url, data=json.dumps(reg_data), headers=headers)
         if response.status_code != 200:
             return response"""
@@ -264,7 +274,7 @@ def create_lc_registration(data):
         # get the priority notice expiry date
         today = datetime.now().strftime('%Y-%m-%d')
         date_uri = app.config['LEGACY_ADAPTER_URI'] + '/dates/' + today
-        date_response = requests.get(date_uri)
+        date_response = requests.get(date_uri, headers=get_headers())
 
         if date_response.status_code != 200:
             raise RuntimeError("Unexpected return from legacy_adapter/dates: " + str(date_response.status_code))
@@ -285,7 +295,7 @@ def store_image_for_later(cursor, document_id, reg_no, reg_date):
 def complete_application(cursor, appn_id, data):
     # Submit registration
     url = app.config['LAND_CHARGES_URI'] + '/registrations'
-    headers = {'Content-Type': 'application/json'}
+    headers = get_headers({'Content-Type': 'application/json'})
     if 'lc_register_details' in data:
         response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
     else:  # banks registration
@@ -356,7 +366,7 @@ def insert_result_row(cursor, request_id, result_type):
 def cancel_application(cursor, appn_id, data):
     # Cancel registration
     url = app.config['LAND_CHARGES_URI'] + '/cancellations'
-    headers = {'Content-Type': 'application/json'}
+    headers = get_headers({'Content-Type': 'application/json'})
     response = requests.post(url, data=json.dumps(data), headers=headers)
     if response.status_code != 200:
         logging.error(response.text)
@@ -378,7 +388,7 @@ def cancel_application(cursor, appn_id, data):
 
 def get_registration_details(reg_date, reg_no):
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + reg_date + '/' + reg_no
-    response = requests.get(url)
+    response = requests.get(url, headers=get_headers())
     if response.status_code != 200:
         return {"data": "could not find registration for " + reg_no + " " + reg_date, "status": response.status_code}
     data = response.json()
