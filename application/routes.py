@@ -9,7 +9,8 @@ import requests
 from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
-    amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, get_registration_details, store_image_for_later
+    amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, \
+    get_registration_details, store_image_for_later, get_headers
 from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
@@ -83,6 +84,9 @@ def health():
 
 @app.before_request
 def before_request():
+
+
+
     msg = "{} {} [{}]".format(request.method, request.url, request.remote_addr)
     logging.info(format_message(msg))
     pass
@@ -468,7 +472,7 @@ def delete_all_reg_forms(date, reg_no):
 @app.route('/keyholders/<key_number>', methods=['GET'])
 def get_keyholder(key_number):
     uri = app.config['LEGACY_ADAPTER_URI'] + '/keyholders/' + key_number
-    response = requests.get(uri)
+    response = requests.get(uri, headers=get_headers())
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
@@ -482,7 +486,7 @@ def get_counties_list():
         params = "?welsh=no"
 
     url = app.config['LAND_CHARGES_URI'] + '/counties' + params
-    data = requests.get(url)
+    data = requests.get(url, headers=get_headers())
     return Response(data, status=200, mimetype='application/json')
 
 
@@ -490,14 +494,14 @@ def get_counties_list():
 def get_translated_county(county_name):
 
     url = app.config['LAND_CHARGES_URI'] + '/county/' + county_name
-    data = requests.get(url)
+    data = requests.get(url, headers=get_headers())
     return Response(data, status=200, mimetype='application/json')
 
 
 @app.route('/complex_names/<name>', methods=['GET'])
 def get_complex_names(name):
     uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names/' + name
-    response = requests.get(uri)
+    response = requests.get(uri, headers=get_headers())
     logging.info('GET {} -- {}'.format(uri, response))
     return Response(response.text, status=200, mimetype='application/json')
 
@@ -506,7 +510,7 @@ def get_complex_names(name):
 def get_complex_names_post():
     data = request.get_json(force=True)
     uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names/search'
-    response = requests.post(uri, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+    response = requests.post(uri, data=json.dumps(data), headers=get_headers({'Content-Type': 'application/json'}))
     logging.info('POST {} -- {}'.format(uri, response))
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
@@ -523,7 +527,7 @@ def insert_complex_name(name, number):
             "name": name
             }
     uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names'
-    response = requests.post(uri, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+    response = requests.post(uri, data=json.dumps(data), headers=get_headers({'Content-Type': 'application/json'}))
     logging.info('POST {} -- {}'.format(uri, response))
     result = {'response': response.text}
     return Response(json.dumps(result), status=response.status_code, mimetype='application/json')
@@ -534,7 +538,7 @@ def court_ref_existence_check(court, ref, year):
     logging.debug("Court existence checking")
 
     url = app.config['LAND_CHARGES_URI'] + '/court_check/' + court + '/' + ref + '/' + year
-    response = requests.get(url)
+    response = requests.get(url, headers=get_headers())
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
 
@@ -546,7 +550,7 @@ def get__originals():
     date = data['date']
     number = data['number']
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + number
-    response = requests.get(url)
+    response = requests.get(url, headers=get_headers())
     if response.status_code == 200:
         """ returned_names = []
             text = json.loads(response.text)
@@ -576,7 +580,7 @@ def post_search():
 
     today = datetime.now().strftime('%Y-%m-%d')
     date_uri = app.config['LEGACY_ADAPTER_URI'] + '/dates/' + today
-    date_response = requests.get(date_uri)
+    date_response = requests.get(date_uri, headers=get_headers())
 
     if date_response.status_code != 200:
         raise RuntimeError("Unexpected return from legacy_adapter/dates: " + str(date_response.status_code))
@@ -586,7 +590,7 @@ def post_search():
     data['search_date'] = date_info['prev_working']
 
     uri = app.config['LAND_CHARGES_URI'] + '/searches'
-    response = requests.post(uri, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+    response = requests.post(uri, data=json.dumps(data), headers=get_headers({'Content-Type': 'application/json'}))
     logging.info('POST {} -- {}'.format(uri, response.text))
 
     # store result
@@ -595,7 +599,7 @@ def post_search():
     cursor = connect()
     for req_id in response_data:
         uri = app.config['LAND_CHARGES_URI'] + '/search_type/' + str(req_id)
-        response = requests.get(uri)
+        response = requests.get(uri, headers=get_headers())
         resp_data = response.json()
         res_type = resp_data['search_type']
         insert_result_row(cursor, req_id, res_type)
@@ -614,7 +618,7 @@ def get_office_copy():
         return_pdf = False
     uri = app.config['LAND_CHARGES_URI'] + '/office_copy' + '?class=' + class_of_charge + '&reg_no=' + reg_no + \
         '&date=' + date
-    response = requests.get(uri, headers={'Content-Type': 'application/json'})
+    response = requests.get(uri, headers=get_headers({'Content-Type': 'application/json'}))
     logging.info('GET {} -- {}'.format(uri, response.text))
     data = json.loads(response.text)
     size = (992, 1430)
@@ -916,7 +920,8 @@ def load_results():
     json_data = request.get_json(force=True)
     # go and get some genuine landcharges.request.ids to feed into the results table
     id_count = str(len(json_data))
-    response = requests.get(app.config['LAND_CHARGES_URI'] + '/request_ids/' + id_count)
+    response = requests.get(app.config['LAND_CHARGES_URI'] + '/request_ids/' + id_count,
+                            headers=get_headers())
     id_list = json.loads(response.content.decode('utf-8'))
     if id_list is None:
         print("no ids retrieved from the land charges uri, run casework-api/data/setup.rb after reset-data")
@@ -1032,7 +1037,7 @@ def reprints(reprint_type):
         registration_date = request.args['registration_date']
         url = app.config['LAND_CHARGES_URI'] + '/request_details?reprint_type=' + reprint_type
         url += '&registration_no=' + registration_no + '&registration_date=' + registration_date
-        response = requests.get(url)
+        response = requests.get(url, headers=get_headers())
         data = json.loads(response.content.decode('utf-8'))
         if "request_id" not in data:
             return "invalid request_id for " + registration_no + ' ' + registration_date
@@ -1043,7 +1048,7 @@ def reprints(reprint_type):
         return Response("Error: could not determine request id", status=400)
     # for the time being call reprint on result-generate. this probably needs moving into casework-api
     url = app.config['RESULT_GENERATE_URI'] + '/reprints?request=' + str(request_id)
-    response = requests.get(url)
+    response = requests.get(url, headers=get_headers())
     return send_file(BytesIO(response.content), as_attachment=False, attachment_filename='reprint.pdf',
                      mimetype='application/pdf')
 
@@ -1052,7 +1057,7 @@ def reprints(reprint_type):
 def get_searches():
     search_data = request.data
     response = requests.post(app.config['LAND_CHARGES_URI'] + '/request_search_details', data=search_data,
-                             headers={'Content-Type': 'application/json'})
+                             headers=get_headers({'Content-Type': 'application/json'}))
     data = json.loads(response.content.decode('utf-8'))
     return Response(json.dumps(data), status=200, mimetype='application/json')
 
