@@ -1,6 +1,6 @@
 from application import app
+from application.logformat import format_message
 from flask import Response, request, send_from_directory, send_file,  url_for, g
-from flask.ext.cors import cross_origin
 import json
 import logging
 import psycopg2
@@ -35,12 +35,12 @@ def index():
 
 @app.errorhandler(Exception)
 def error_handler(err):
-    logging.error('Unhandled exception: ' + str(err))
+    logging.error(format_message('Unhandled exception: ' + str(err)))
     call_stack = traceback.format_exc()
 
     lines = call_stack.split("\n")
     for line in lines:
-        logging.error(line)
+        logging.error(format_message(line))
 
     error = {
         "type": "F",
@@ -83,15 +83,16 @@ def health():
 
 @app.before_request
 def before_request():
-    logging.info("BEGIN %s %s [%s] (%s)",
-                 request.method, request.url, request.remote_addr, request.__hash__())
+    msg = "{} {} [{}]".format(request.method, request.url, request.remote_addr)
+    logging.info(format_message(msg))
+    pass
 
 
 @app.after_request
 def after_request(response):
-    logging.info('END %s %s [%s] (%s) -- %s',
-                 request.method, request.url, request.remote_addr, request.__hash__(),
-                 response.status)
+    # logging.info('END %s %s [%s] (%s) -- %s',
+    #              request.method, request.url, request.remote_addr, request.__hash__(),
+    #              response.status)
     return response
 
 
@@ -465,7 +466,6 @@ def delete_all_reg_forms(date, reg_no):
 
 # =========== OTHER ROUTES ==============
 @app.route('/keyholders/<key_number>', methods=['GET'])
-@cross_origin()
 def get_keyholder(key_number):
     uri = app.config['LEGACY_ADAPTER_URI'] + '/keyholders/' + key_number
     response = requests.get(uri)
@@ -473,7 +473,6 @@ def get_keyholder(key_number):
 
 
 @app.route('/counties', methods=['GET'])
-@cross_origin()
 def get_counties_list():
     params = ""
     if 'welsh' in request.args:
@@ -488,7 +487,6 @@ def get_counties_list():
 
 
 @app.route('/county/<county_name>', methods=['GET'])
-@cross_origin()
 def get_translated_county(county_name):
 
     url = app.config['LAND_CHARGES_URI'] + '/county/' + county_name
@@ -497,7 +495,6 @@ def get_translated_county(county_name):
 
 
 @app.route('/complex_names/<name>', methods=['GET'])
-@cross_origin()
 def get_complex_names(name):
     uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names/' + name
     response = requests.get(uri)
@@ -515,7 +512,6 @@ def get_complex_names_post():
 
 
 @app.route('/complex_names/<name>/<number>', methods=['POST'])
-@cross_origin()
 def insert_complex_name(name, number):
     logging.debug("Complex insert")
     today = datetime.now().strftime('%Y-%m-%d')
