@@ -14,7 +14,7 @@ def get_headers(headers=None):
         headers = {}
 
     if 'X-Transaction-ID' in request.headers:
-        headers['X-Transaction-ID'] = request.headers
+        headers['X-Transaction-ID'] = request.headers['X-Transaction-ID']
     return headers
 
 
