@@ -121,26 +121,21 @@ def delete_application(cursor, appn_id):
 def amend_application(cursor, appn_id, data):
     logging.debug(data)
     if data['update_registration']['type'] == 'Amendment':
-        print('***1')
         doc_id = data['application_data']['document_id']
         reg_data = data['registration']
         if 'wob_original' in data and 'pab_original' in data:
-            print('***2')
             reg_no = data['wob_original']['number']
             date = data['wob_original']['date']
             reg_data['pab_amendment'] = {'reg_no': data['pab_original']['number'],
                                          'date': data['pab_original']['date'],
                                          }
         elif 'wob_original' in data:
-            print('***3')
             reg_no = data['wob_original']['number']
             date = data['wob_original']['date']
         else:
-            print('***4')
             reg_no = data['pab_original']['number']
             date = data['pab_original']['date']
     else:  # rectification
-        print('***4')
         reg_no = data['regn_no']
         date = data['registration']['date']
         doc_id = data['document_id']
@@ -149,11 +144,9 @@ def amend_application(cursor, appn_id, data):
         del data['document_id']
         reg_data = data
 
-    print('***5')
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
     headers = {'Content-Type': 'application/json'}
     response = requests.put(url, data=json.dumps(reg_data), headers=headers)
-    print('***6', response.status_code)
     if response.status_code != 200:
         return response
 
@@ -162,20 +155,7 @@ def amend_application(cursor, appn_id, data):
     for regn in regns['new_registrations']:
         number = regn['number']
         date = regn['date']
-        print('&**&*&**&**&', number, date, doc_id)
         store_image_for_later(cursor, doc_id, number, date)
-
-    # need to cancel PAB registrations if WOB and PAB provided for amendment
-    """if 'wob_original' in data and 'pab_original' in data:
-        reg_no = data['pab_original']['number']
-        date = data['pab_original']['date']
-        reg_data['pab_amendment'] = {'reg_no': regns['new_registrations'][0]['number'],
-                                     'date': regns['new_registrations'][0]['date']}
-        url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
-        headers = {'Content-Type': 'application/json'}
-        response = requests.put(url, data=json.dumps(reg_data), headers=headers)
-        if response.status_code != 200:
-            return response"""
 
     # Delete work-item
     delete_application(cursor, appn_id)
