@@ -94,7 +94,8 @@ image_data = [
         'bounds': [0.107371794871795, 0.0787221905305191, 0.184294871794872, 0.0935539075869937],
         'options': [
             {'pattern': 'Rule 6.?13.?\s+6.?43', 'result': 'PA(B)'},
-            {'pattern': 'Rule 6\.49', 'result': 'WO(B)'}
+            {'pattern': 'Rule 6\.49', 'result': 'WO(B)'},
+            {'pattern': 'Rule 6\.34', 'result': 'WO(B)'}
         ]
     }
 ]
