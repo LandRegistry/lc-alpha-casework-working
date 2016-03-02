@@ -162,6 +162,9 @@ def amend_application(cursor, appn_id, data):
 
     regns = response.json()
 
+    # Insert print job
+    insert_result_row(cursor, regns['request_id'], 'amendment')
+
     for regn in regns['new_registrations']:
         number = regn['number']
         date = regn['date']

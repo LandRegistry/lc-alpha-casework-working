@@ -18,5 +18,5 @@ class Config(object):
     TEMP_DIRECTORY = os.getenv('TEMP_DIRECTORY', '/vagrant')
     LAND_CHARGES_URI = os.getenv('LAND_CHARGES_URL', 'http://localhost:5004')
     LEGACY_ADAPTER_URI = os.getenv('LEGACY_ADAPTER_URL', 'http://localhost:5007')
-    RESULT_GENERATE_URI = os.getenv('RESULTS_GENERATE_URL', 'http://localhost:5016')
+    RESULT_GENERATE_URI = os.getenv('RESULTS_GENERATE_URL', 'http://10.0.2.2:5016')
     # IMAGE_DIRECTORY = '/home/vagrant/interim/'
