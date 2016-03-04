@@ -21,7 +21,9 @@ def get_headers(headers=None):
 def insert_new_application(cursor, data):
     app_data = data['application_data']
     delivery_method = data['delivery_method'] if 'delivery_method' in data else None
-
+    # the scanning system can be set to automatically assign the work queue based on form type
+    if data['work_type'] == 'auto':
+        data['work_type'] = get_work_type(data['application_type'])
     cursor.execute("INSERT INTO pending_application (application_data, date_received, "
                    "application_type, status, work_type, delivery_method) " +
                    "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s, %(delivery)s) "
@@ -31,6 +33,31 @@ def insert_new_application(cursor, data):
                                     "delivery": delivery_method})
     item_id = cursor.fetchone()[0]
     return item_id
+
+
+def get_work_type(application_type):
+    # detect the work list from the form
+    if application_type in ["WOB", "PAB", "WO(B)", "PA(B)"]:
+        work_type = 'bank_regn'
+    elif application_type in ["WOB Amend", "PAB Amend", "WO(B) Amend", "PA(B) Amend"]:
+        work_type = 'bank_amend'
+    elif application_type in ["K1", "K2", "K3", "K4"]:
+        work_type = 'lc_regn'
+    elif application_type == "K6":
+        work_type = 'lc_pn'
+    elif application_type in ["K7", "K8"]:
+        work_type = 'lc_renewal'
+    elif application_type == "K9":
+        work_type = 'lc_rect'
+    elif application_type in ["K11", "K12", "K13"]:
+        work_type = 'cancel'
+    elif application_type == "K15":
+        work_type = 'search_full'
+    elif application_type == "K16":
+        work_type = 'search_bank'
+    else:
+        work_type = 'unknown'
+    return work_type
 
 
 def get_application_list(cursor, list_type):
