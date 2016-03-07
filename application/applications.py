@@ -212,7 +212,6 @@ def correct_application(cursor, data):
     date = data['orig_regn']['date']
     reg_no = data['orig_regn']['number']
     reg_data = data['registration']
-    print('**********we are here', reg_data)
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
     headers = get_headers({'Content-Type': 'application/json'})
     response = requests.put(url, data=json.dumps(reg_data), headers=headers)
