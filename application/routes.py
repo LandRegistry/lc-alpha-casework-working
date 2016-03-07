@@ -10,7 +10,7 @@ from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
     amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, \
-    get_registration_details, store_image_for_later, get_headers, correct_application
+    get_registration_details, store_image_for_later, get_headers, correct_application, get_work_type, reclassify_appn
 from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
@@ -26,7 +26,7 @@ valid_types = ['all', 'pab', 'wob',
                'bank', 'bank_regn', 'bank_amend', 'bank_rect', 'bank_with', 'bank_stored',
                'lc_regn', 'lc', 'lc_pn', 'lc_rect', 'lc_renewal', 'lc_stored',
                'amend', 'cancel', 'canc', 'cancel_part', 'cancel_stored',
-               'prt_search', 'search', 'search_full', 'search_bank', 'oc']
+               'prt_search', 'search', 'search_full', 'search_bank', 'oc', 'unknown']
 
 
 @app.route('/', methods=["GET"])
@@ -84,9 +84,6 @@ def health():
 
 @app.before_request
 def before_request():
-
-
-
     msg = "{} {} [{}]".format(request.method, request.url, request.remote_addr)
     logging.info(format_message(msg))
     pass
@@ -432,7 +429,6 @@ def remove_reg_forms():
     cursor.execute('DELETE FROM registered_documents')
     complete(cursor)
     return Response(status=200)
-
 
 
 @app.route('/registered_forms/<date>/<reg_no>', methods=['GET'])
@@ -1061,3 +1057,19 @@ def get_registration(reg_date, reg_name):
         return Response(json.dumps(response['data']), status=response['status'], mimetype='application/json')
     else:
         return Response(json.dumps(response['data']), status=200, mimetype='application/json')
+
+
+@app.route('/reclassify', methods=['POST'])
+def reclassify_form():
+    data = request.get_json(force=True)
+    appn_id = data['appn_id']
+    form_type = data['form_type']
+    logging.info("T:%s Reclassify %s Application ", data['appn_id'], data['form_type'])
+    work_type = get_work_type(form_type)
+    logging.info("as ", work_type["list_title"])
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        reclassify_appn(cursor, appn_id, form_type, work_type["work_type"])
+    finally:
+        complete(cursor)
+    return Response(json.dumps(work_type), status=200, mimetype='application/json')

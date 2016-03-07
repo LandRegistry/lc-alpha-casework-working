@@ -23,7 +23,8 @@ def insert_new_application(cursor, data):
     delivery_method = data['delivery_method'] if 'delivery_method' in data else None
     # the scanning system can be set to automatically assign the work queue based on form type
     if data['work_type'] == 'auto':
-        data['work_type'] = get_work_type(data['application_type'])
+        response = get_work_type(data['application_type'])
+        data['work_type'] = response["work_type"]
     cursor.execute("INSERT INTO pending_application (application_data, date_received, "
                    "application_type, status, work_type, delivery_method) " +
                    "VALUES (%(json)s, %(date)s, %(type)s, %(status)s, %(work_type)s, %(delivery)s) "
@@ -37,26 +38,28 @@ def insert_new_application(cursor, data):
 
 def get_work_type(application_type):
     # detect the work list from the form
-    if application_type in ["WOB", "PAB", "WO(B)", "PA(B)"]:
-        work_type = 'bank_regn'
-    elif application_type in ["WOB Amend", "PAB Amend", "WO(B) Amend", "PA(B) Amend"]:
-        work_type = 'bank_amend'
-    elif application_type in ["K1", "K2", "K3", "K4"]:
-        work_type = 'lc_regn'
-    elif application_type == "K6":
-        work_type = 'lc_pn'
-    elif application_type in ["K7", "K8"]:
-        work_type = 'lc_renewal'
-    elif application_type == "K9":
-        work_type = 'lc_rect'
-    elif application_type in ["K11", "K12", "K13"]:
-        work_type = 'cancel'
-    elif application_type == "K15":
-        work_type = 'search_full'
-    elif application_type == "K16":
-        work_type = 'search_bank'
+    form_type = application_type.upper()
+    if form_type == "WOB" or form_type == "PAB" or form_type == "WO(B)" or form_type == "PA(B)":
+        work_type = {"work_type": "bank_regn", "list_title": "Bankruptcy Registrations"}
+    elif (form_type == "WOB AMEND" or form_type == "PAB AMEND" or form_type == "WO(B) AMEND" or form_type ==
+            "PA(B) AMEND" or form_type == "PABAMEND" or form_type == "WOBAMEND" or form_type == "LRRABO"):
+        work_type = {"work_type": "bank_amend", "list_title": "Bankruptcy Amendments"}
+    elif form_type == "K1" or form_type == "K2" or form_type == "K3" or form_type == "K4":
+        work_type = {"work_type": "lc_regn", "list_title": "Bankruptcy Registrations"}
+    elif form_type == "K6":
+        work_type = {"work_type": "lc_pn", "list_title": "Priority Notices"}
+    elif form_type == "K7" or form_type == "K8":
+        work_type = {"work_type": "lc_renewal", "list_title": "Land Charge Renewals"}
+    elif form_type == "K9":
+        work_type = {"work_type": "lc_rect", "list_title": "Land Charge Rectifications"}
+    elif form_type == "K11" or form_type == "K12" or form_type == "K13":
+        work_type = {"work_type": "cancel", "list_title": "Cancellations"}
+    elif form_type == "K15":
+        work_type = {"work_type": "search_full", "list_title": "Searches - Full"}
+    elif form_type == "K16":
+        work_type = {"work_type": "search_bank", "list_title": "Searches - Bankruptcy"}
     else:
-        work_type = 'unknown'
+        work_type = {"work_type": "unknown", "list_title": "Unidentified"}
     return work_type
 
 
@@ -530,3 +533,15 @@ def get_occupation(party):
         occupation = party['occupation']
 
     return occupation
+
+
+def reclassify_appn(cursor, appn_id, form_type, work_type):
+    cursor.execute("UPDATE pending_application SET application_type = %(form_type)s, work_type = %(work_type)s "
+                   "WHERE id=%(id)s and lock_ind IS NULL ",
+                   {"form_type": form_type, "work_type": work_type, "id": appn_id}
+                   )
+    if cursor.rowcount == 0:
+        logging.info("could not reclassify %s, %s, %s: no rows updated", appn_id, form_type, work_type)
+        return None
+    else:
+        return "success"
