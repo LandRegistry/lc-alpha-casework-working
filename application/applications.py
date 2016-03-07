@@ -45,7 +45,7 @@ def get_work_type(application_type):
             "PA(B) AMEND" or form_type == "PABAMEND" or form_type == "WOBAMEND" or form_type == "LRRABO"):
         work_type = {"work_type": "bank_amend", "list_title": "Bankruptcy Amendments"}
     elif form_type == "K1" or form_type == "K2" or form_type == "K3" or form_type == "K4":
-        work_type = {"work_type": "lc_regn", "list_title": "Bankruptcy Registrations"}
+        work_type = {"work_type": "lc_regn", "list_title": "Land Charge Registrations"}
     elif form_type == "K6":
         work_type = {"work_type": "lc_pn", "list_title": "Priority Notices"}
     elif form_type == "K7" or form_type == "K8":
