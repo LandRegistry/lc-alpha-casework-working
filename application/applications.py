@@ -204,6 +204,26 @@ def amend_application(cursor, appn_id, data):
     return regns
 
 
+def correct_application(cursor, data):
+    logging.debug("begin to correct application" + json.dumps(data))
+    date = data['orig_regn']['date']
+    reg_no = data['orig_regn']['number']
+    reg_data = data['registration']
+    print('**********we are here', reg_data)
+    url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
+    headers = get_headers({'Content-Type': 'application/json'})
+    response = requests.put(url, data=json.dumps(reg_data), headers=headers)
+    if response.status_code != 200:
+        return response
+
+    regns = response.json()
+
+    if data['k22'] is True:
+        insert_result_row(cursor, regns['request_id'], 'registration')
+
+    return regns
+
+
 def create_lc_registration(data):
     coc_lut = {
         'C(I)': 'C1',

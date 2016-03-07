@@ -10,7 +10,7 @@ from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     update_application_details, bulk_insert_applications, complete_application, delete_application, \
     amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, \
-    get_registration_details, store_image_for_later, get_headers
+    get_registration_details, store_image_for_later, get_headers, correct_application
 from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
@@ -221,6 +221,8 @@ def update_application(appn_id):
         elif action == 'cancel':
             appn = cancel_application(cursor, appn_id, data)
             print("appn : ", str(appn))
+        elif action == 'correction':
+            appn = correct_application(cursor, data)
         else:
             return Response("Invalid action", status=400)
         complete(cursor)
@@ -552,23 +554,10 @@ def get__originals():
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + number
     response = requests.get(url, headers=get_headers())
     if response.status_code == 200:
-        """ returned_names = []
-            text = json.loads(response.text)
-            for names in text['parties'][0]['names']:
-                forenames = ' '.join(names['private']['forenames'])
-                surname = names['private']['surname']
-                returned_names.append(forenames + ' ' + surname)
-            result.append({
-                'names': returned_names,
-                'class_of_charge': text['class_of_charge'],
-                'number': number,
-                'date': date
-            })"""
         result = (json.loads(response.text))
     else:
         return Response(json.dumps(response.text), status=response.status_code, mimetype='application/json')
 
-    print('******the result is******', result)
     return Response(json.dumps(result), status=response.status_code, mimetype='application/json')
 
 
