@@ -108,7 +108,8 @@ def get_application_list(cursor, list_type):
 
 
 def get_application_by_id(cursor, appn_id):
-    cursor.execute("SELECT date_received, application_data, application_type, status, work_type, assigned_to "
+    cursor.execute("SELECT date_received, application_data, application_type, status, work_type, assigned_to, " +
+                   "delivery_method "
                    "FROM pending_application "
                    "WHERE id=%(id)s", {"id": appn_id})
     rows = cursor.fetchall()
@@ -124,6 +125,7 @@ def get_application_by_id(cursor, appn_id):
         "status": row['status'],
         "work_type": row['work_type'],
         "assigned_to": row['assigned_to'],
+        "delivery_method": row['delivery_method']
     }
 
 
@@ -182,6 +184,7 @@ def amend_application(cursor, appn_id, data):
         del data['regn_no']
         del data['registration']
         del data['document_id']
+        del data['fee']
         reg_data = data
 
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no

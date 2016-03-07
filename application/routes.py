@@ -222,6 +222,10 @@ def update_application(appn_id):
             appn = correct_application(cursor, data)
         else:
             return Response("Invalid action", status=400)
+        # sort out the fee
+        if action == 'complete' or action == 'rectify' or action == 'cancel':
+            if data['fee']['type'] == 'dd':
+                print('something fee related', data['fee'])
         complete(cursor)
     except:
         rollback(cursor)
