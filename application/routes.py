@@ -206,6 +206,13 @@ def update_application(appn_id):
 
     data = request.get_json(force=True)
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    # store fee info for later use. Quick fix because of data structure in rectifications
+    if 'fee_details' in data:
+        fee_ind = True
+        fee_details = data['fee_details']
+    else:
+        fee_ind = False
+        fee_details = {}
 
     try:
         if action == 'store':
@@ -223,9 +230,15 @@ def update_application(appn_id):
         else:
             return Response("Invalid action", status=400)
         # sort out the fee
-        if 'fee_details' in data:
-            if data['fee_details']['type'] == 'dd':
-                logging.debug("Direct debit fee selected" + json.dumps(data['fee_details']))
+        if fee_ind is True:
+            if fee_details['type'] == 'dd':
+                logging.debug("Direct debit fee selected" + json.dumps(fee_details))
+                # build the fee details to pass to legacy_adapter
+                print('*********data*******', data)
+                print('*********appn*******', appn)
+                fee = build_fee_data(data, appn, fee_details, action)
+
+
         complete(cursor)
     except:
         rollback(cursor)
@@ -1077,3 +1090,64 @@ def reclassify_form():
     finally:
         complete(cursor)
     return Response(json.dumps(work_type), status=200, mimetype='application/json')
+
+
+def build_fee_data(data, appn, fee_details, action):
+    print('*******data in build fee**********', data)
+    status_code = 200
+    if action == 'complete':
+        fee = {'transaction_code': 'RN',
+               'key_number': data['key_number'],
+               'reference': data['application_ref'],
+               'class_of_charge': data['lc_register_details']['class']}
+        reg_type = 'new_registrations'
+    elif action == 'rectify':
+        fee = {'transaction_code': 'RN',
+               'key_number': data['applicant']['key_number'],
+               'reference': data['applicant']['reference'],
+               'class_of_charge': data['class_of_charge']}
+        reg_type = 'new registrations'
+    elif action == 'cancel':
+        fee = {'transaction_code': 'CN',
+               'key_number': data['applicant']['key_number'],
+               'reference': data['applicant']['reference']}
+        reg_type = 'cancellations'
+        date = data['registration']['date']
+        number = data['registration_no']
+        url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + number
+        response = requests.get(url, headers=get_headers())
+        if response.status_code == 200:
+            result = (json.loads(response.text))
+            fee['class_of_charge'] = result['class_of_charge']
+        else:
+            return response.status_code
+    elif action == 'search':
+        print('i am a search and proud of it')
+        fee = ' '
+        # call legacy_adapter to process fee for search and return
+        return status_code
+    else:
+        status_code = 400
+        return status_code
+
+    # call legacy_adapter for each registration number
+    if 'priority_notices' in appn:
+        reg_type = 'priority_notices'
+   
+    for reg in appn[reg_type]:
+        fee_data = {'fee_info': fee}
+        if action == 'cancel':
+            fee_data['reg_no'] = number
+            fee_data['appn_no'] = reg['number']
+        else:
+            fee_data['reg_no'] = reg['number']
+            fee_data['appn_no'] = reg['number']
+        fee_data['fee_factor'] = fee_details['fee_factor']
+
+        logging.debug("fee information" + json.dumps(fee_data))
+        url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
+        response = requests.post(url, data=fee_data, headers=get_headers())
+        if response.status_code != 200:
+            return response.status_code
+
+    return status_code
