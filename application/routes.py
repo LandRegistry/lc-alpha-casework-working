@@ -223,9 +223,9 @@ def update_application(appn_id):
         else:
             return Response("Invalid action", status=400)
         # sort out the fee
-        if action == 'complete' or action == 'rectify' or action == 'cancel':
-            if data['fee']['type'] == 'dd':
-                print('something fee related', data['fee'])
+        if 'fee_details' in data:
+            if data['fee_details']['type'] == 'dd':
+                logging.debug("Direct debit fee selected" + json.dumps(data['fee_details']))
         complete(cursor)
     except:
         rollback(cursor)

@@ -184,7 +184,7 @@ def amend_application(cursor, appn_id, data):
         del data['regn_no']
         del data['registration']
         del data['document_id']
-        del data['fee']
+        del data['fee_details']
         reg_data = data
 
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
