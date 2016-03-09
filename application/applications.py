@@ -486,7 +486,7 @@ def get_estate_owner(name):
     elif name['type'] == 'Complex Name':
         name_for_screen['complex'] = {"name": name['complex']['name'], "number": name['complex']['number']}
     elif name['type'] == 'Other':
-        name_for_screen['company'] = name['company']
+        name_for_screen['other'] = name['other']
     return name_for_screen
 
 
