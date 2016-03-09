@@ -636,13 +636,14 @@ def get_office_copy():
     im = Image.new('RGB', size, cl_white)
     draw = ImageDraw.Draw(im)
     cursor_pos = 50
-    draw_text(draw, (140, cursor_pos), 'Application for Registration of Petition in Bankruptcy', arialbold, fs_main, 
+    draw_text(draw, (140, cursor_pos), 'Application for Registration of a Pending Action in Bankruptcy', arialbold, fs_main,
               cl_black)
     cursor_pos += 50
-    draw_text(draw, (170, cursor_pos), 'This is an official copy of the data provided by the Insolvency',
+    draw_text(draw, (170, cursor_pos), 'This is an official copy of the relevant particulars provided by the',
               arial, fs_sub, cl_black)
     cursor_pos += 30
-    draw_text(draw, (210, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, fs_sub, cl_black)
+    draw_text(draw, (210, cursor_pos), 'Insolvency Service to register a Pending Action in Bankruptcy', arial, fs_sub,
+              cl_black)
     cursor_pos += 80
     draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, fs_sub_title, cl_black)
     cursor_pos += 30
@@ -650,7 +651,7 @@ def get_office_copy():
     cursor_pos += 30
     label_pos = 150
     data_pos = 400
-    draw_text(draw, (label_pos, cursor_pos), 'Reference: ', arial, fs_text, cl_black)
+    draw_text(draw, (label_pos, cursor_pos), 'Land Charge Reference: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), data['application_ref'], arial, fs_text, cl_black)
     cursor_pos += 30
     draw_text(draw, (label_pos, cursor_pos), 'Key Number: ', arial, fs_text, cl_black)
@@ -941,7 +942,7 @@ def load_results():
 def set_result_status(result_id):
     cursor = connect()
     json_data = request.get_json(force=True)
-    
+
     try:
         if 'print_status' in json_data:
             cursor.execute('UPDATE results set print_status = %(result_status)s WHERE id = %(result_id)s',
@@ -961,17 +962,17 @@ def set_result_status(result_id):
 def get_result(result_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     job = None
-    
+
     try:
         cursor.execute("SELECT id, request_id, res_type FROM results Where id = %(id)s", {'id': result_id})
         rows = cursor.fetchall()
-        
+
         if len(rows) > 0:
             job = {
                 'id': rows[0]['id'],
                 'request_id': rows[0]['request_id'],
                 'res_type': rows[0]['res_type']
-            }        
+            }
     finally:
         complete(cursor)
     if job is None:
@@ -1079,11 +1080,12 @@ def reclassify_form():
     data = request.get_json(force=True)
     appn_id = data['appn_id']
     form_type = data['form_type']
-    logging.info("T:%s Reclassify %s Application ", data['appn_id'], data['form_type'])
+    logging.info("T:%s Reclassify as a %s Application ", str(appn_id), str(form_type))
     work_type = get_work_type(form_type)
-    logging.info("as ", work_type["list_title"])
+    logging.info("move to ", work_type["list_title"])
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
+        unlock_application(appn_id)
         reclassify_appn(cursor, appn_id, form_type, work_type["work_type"])
     finally:
         complete(cursor)
