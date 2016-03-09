@@ -593,8 +593,17 @@ def post_search():
 
     # store result
     response_data = response.json()
-    # process fee info
-    build_fee_data(data, response_data, data['fee_details'], 'search')
+    logging.debug("search data returned" + json.dumps(response_data))
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        # process fee info
+        if data['fee_details']['type'] == 'dd':
+            build_fee_data(data, response_data, data['fee_details'], 'search')
+        store_image_for_later(cursor, data['document_id'], None, None, response_data[0])
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
 
     cursor = connect()
     for req_id in response_data:
