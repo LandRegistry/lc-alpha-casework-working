@@ -1184,7 +1184,7 @@ def build_fee_data(data, appn, fee_details, action):
 
         logging.debug("fee information" + json.dumps(fee_data))
         url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
-        response = requests.post(url, data=fee_data, headers=get_headers())
+        response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
         if response.status_code != 200:
             err = 'Failed to call fee_process for ' + str(fee_data['appn_no']) + '. Error code:' \
                   + str(response.status_code)
