@@ -1154,7 +1154,7 @@ def build_fee_data(data, appn, fee_details, action):
         # call legacy_adapter to process fee for search and return
         logging.debug("fee information" + json.dumps(fee_data))
         url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
-        response = requests.post(url, data=fee_data, headers=get_headers())
+        response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
         if response.status_code == 200:
             return response.status_code
         else:
