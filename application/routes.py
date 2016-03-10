@@ -1176,10 +1176,10 @@ def build_fee_data(data, appn, fee_details, action):
         fee_data = {'fee_info': fee}
         if action == 'cancel':
             fee_data['reg_no'] = number
-            fee_data['appn_no'] = reg['number']
+            fee_data['appn_no'] = str(reg['number'])
         else:
-            fee_data['reg_no'] = reg['number']
-            fee_data['appn_no'] = reg['number']
+            fee_data['reg_no'] = str(reg['number'])
+            fee_data['appn_no'] = str(reg['number'])
         fee_data['fee_factor'] = fee_details['fee_factor']
 
         logging.debug("fee information" + json.dumps(fee_data))
