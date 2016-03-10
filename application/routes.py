@@ -464,6 +464,26 @@ def get_registered_forms(date, reg_no):
         complete(cursor)
 
 
+@app.route('/registered_search_forms/<request_id>', methods=['GET'])
+def get_registered_search_forms(request_id):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('select doc_id from registered_documents '
+                       'where request_id=%(id)s', {
+                           'id': request_id
+                       })
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            return Response(status=404)
+
+        result = {
+            'document_id': rows[0]['doc_id']
+        }
+        return Response(json.dumps(result), status=200, mimetype='application/json')
+    finally:
+        complete(cursor)
+
+
 @app.route('/registered_forms/<date>/<reg_no>', methods=['DELETE'])
 def delete_all_reg_forms(date, reg_no):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
@@ -478,6 +498,20 @@ def delete_all_reg_forms(date, reg_no):
     finally:
         complete(cursor)
 
+
+@app.route('/registered_search_forms/<request_id>', methods=['DELETE'])
+def delete_all_search_forms(request_id):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('delete from registered_documents '
+                       'where request_id=%(id)s', {
+                           'id': request_id
+                       })
+        return Response(status=200)
+
+    # TODO: also remove form from documents table?
+    finally:
+        complete(cursor)
 
 # =========== OTHER ROUTES ==============
 @app.route('/keyholders/<key_number>', methods=['GET'])
@@ -593,7 +627,7 @@ def post_search():
 
     # store result
     response_data = response.json()
-    logging.debug("search data returned" + json.dumps(response_data))
+    logging.debug(json.dumps(response_data))
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         # process fee info
