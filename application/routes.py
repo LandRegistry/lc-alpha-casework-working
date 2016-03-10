@@ -1009,7 +1009,6 @@ def build_fee_data(data, appn, fee_details, action):
             logging.error(format_message(err))
             raise RuntimeError(err)
     elif action == 'search':
-        # TODO: still need to sort out serach certificate no
         if fee_details['delivery'] == 'Postal':
             transaction_code = 'PS'
         else:
@@ -1022,7 +1021,7 @@ def build_fee_data(data, appn, fee_details, action):
 
         fee_data = {'fee_info': fee,
                     'reg_no': ' ',
-                    'appn_no': data['search_appn'],
+                    'appn_no': data['cert_no'],
                     'fee_factor': fee_details['fee_factor']}
 
         # call legacy_adapter to process fee for search and return
@@ -1032,7 +1031,7 @@ def build_fee_data(data, appn, fee_details, action):
         if response.status_code == 200:
             return response.status_code
         else:
-            err = 'Failed to call fee_process for ' + data['search_appn'] + '. Error code:' \
+            err = 'Failed to call fee_process for ' + data['cert_no'] + '. Error code:' \
                   + str(response.status_code)
 
             logging.error(format_message(err))
