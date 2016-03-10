@@ -19,7 +19,7 @@ from application.ocr import recognise
 import traceback
 from PIL import Image, ImageDraw, ImageFont, TiffImagePlugin
 import os
-from application.oc import create_document
+from application.oc import create_document, create_document_only
 
 
 valid_types = ['all', 'pab', 'wob',
@@ -621,152 +621,15 @@ def get_office_copy():
     class_of_charge = request.args['class']
     reg_no = request.args['reg_no']
     date = request.args['date']
-    if 'pdf' in request.args:
-        return_pdf = True
-    else:
-        return_pdf = False
     uri = app.config['LAND_CHARGES_URI'] + '/office_copy' + '?class=' + class_of_charge + '&reg_no=' + reg_no + \
         '&date=' + date
     response = requests.get(uri, headers=get_headers({'Content-Type': 'application/json'}))
     logging.info('GET {} -- {}'.format(uri, response.text))
     data = json.loads(response.text)
-    size = (992, 1430)
-    cl_white = (255, 255, 255)
-    cl_black = (0, 0, 0)
-    cl_grey = (178, 178, 178)
-    arial = 'arial.ttf'
-    arialbold = 'arialbd.ttf'
-    fs_main = 28
-    fs_sub = 24
-    fs_sub_title = 20
-    fs_text = 16
-    fs_footer = 12
-
-    im = Image.new('RGB', size, cl_white)
-    draw = ImageDraw.Draw(im)
-    cursor_pos = 50
-    draw_text(draw, (140, cursor_pos), 'Application for Registration of a Pending Action in Bankruptcy', arialbold, fs_main,
-              cl_black)
-    cursor_pos += 50
-    draw_text(draw, (170, cursor_pos), 'This is an official copy of the relevant particulars provided by the',
-              arial, fs_sub, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (210, cursor_pos), 'Insolvency Service to register a Pending Action in Bankruptcy', arial, fs_sub,
-              cl_black)
-    cursor_pos += 80
-    draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, fs_sub_title, cl_black)
-    cursor_pos += 30
-    draw.line((100, cursor_pos, (im.size[1]-300), cursor_pos), fill=0)
-    cursor_pos += 30
-    label_pos = 150
-    data_pos = 400
-    draw_text(draw, (label_pos, cursor_pos), 'Land Charge Reference: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['application_ref'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (label_pos, cursor_pos), 'Key Number: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['key_number'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (label_pos, cursor_pos), 'Date: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['application_date'], arial, fs_text, cl_black)
-    cursor_pos += 50
-    draw_text(draw, (100, cursor_pos), 'Particulars of Debtor:', arialbold, fs_sub_title, cl_black)
-
-    cursor_pos += 30
-    draw.line((100, cursor_pos, (im.size[1]-300), cursor_pos), fill=0)
-
-    if 'debtor_names' in data:
-        name_count = 1
-        for debtor_name in data['debtor_names']:
-            if name_count == 1:
-                cursor_pos += 30
-                draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, fs_text, cl_black)
-            elif name_count == 2:
-                cursor_pos += 30
-                draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, fs_text, cl_black)
-            else:
-                cursor_pos += 25
-            debtor_forenames = ""
-            for forenames in debtor_name['forenames']:
-                debtor_forenames += forenames + " "
-            debtor_forenames = debtor_forenames.strip()
-            draw_text(draw, (data_pos, cursor_pos), debtor_forenames + " " + debtor_name['surname'], arial,
-                      fs_text, cl_black)
-            name_count += 1
-    # cursor_pos += 50
-    # draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Date of Birth: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['date_of_birth'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Gender: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['gender'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Residence: ', arial, fs_text, cl_black)
-    if data['residence_withheld']:
-        draw_text(draw, (data_pos, cursor_pos), "DEBTORS ADDRESS IS STATED TO BE UNKNOWN", arial, fs_text, cl_black)
-    else:
-        cursor_pos -= 40
-        for address in data['residence']:
-            cursor_pos += 40
-            for address_line in address['address_lines']:
-                draw_text(draw, (data_pos, cursor_pos), address_line, arial, fs_text, cl_black)
-                cursor_pos += 25
-            draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, cl_black)
-            cursor_pos += 25
-            draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Business Address: ', arial, fs_text, cl_black)
-    if 'business_address' in data:
-        draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Investment Property: ', arial, fs_text, cl_black)
-    if 'investment_property' in data:
-        draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, fs_text, cl_black)
-    cursor_pos = 1250
-    left_pos = 50
-    draw_text(draw, (left_pos, cursor_pos), 'Land Registry', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Land Charges Department', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Seaton Court', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), '2 William Prance Road', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Plymouth', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'PL6 5WS', arial, fs_footer, cl_grey)
-    del draw
-    image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/images')
-    file_name = 'officeopy_'+class_of_charge + '_' + reg_no + '_' + date
-    if return_pdf:
-        file_path = os.path.join(image_path, 'output.pdf')
-        im.save(file_path, 'PDF', resolution=120.0)
-        file_name += '.pdf'
-    else:
-        TiffImagePlugin.WRITE_LIBTIFF = True
-        file_path = os.path.join(image_path, 'output.tiff')
-        im.save(file_path, compression="tiff_lzw", resolution=120.0)
-        TiffImagePlugin.WRITE_LIBTIFF = False
-        file_name += '.tiff'
-
-    with open(file_path, 'rb') as f:
-        contents = f.read()
+    contents, file_name = create_document_only(data, app.config)
     response = send_file(BytesIO(contents), as_attachment=True, attachment_filename=file_name)
-    os.remove(file_path)
     return response
 
-
-def draw_text(canvas, text_pos, text, font_name, font_size, font_color):
-    fonts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/static/fonts')
-    fnt = ImageFont.truetype(os.path.join(fonts_path, font_name), font_size)
-    canvas.text(text_pos, text, font_color, font=fnt)
-    return "ok"
 
 # ========= Dev Routes ==============
 
