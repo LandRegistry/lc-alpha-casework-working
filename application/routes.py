@@ -583,9 +583,22 @@ def post_search():
     if date_response.status_code != 200:
         raise RuntimeError("Unexpected return from legacy_adapter/dates: " + str(date_response.status_code))
 
+    # call legacy_adapter to retrieve the next search number
+    url = app.config['LEGACY_ADAPTER_URI'] + '/search_number'
+    response = requests.get(url, headers=get_headers())
+    if response.status_code == 200:
+        cert_no = response.text
+    else:
+        err = 'Failed to call search_number. Error code:' \
+              + str(response.status_code)
+
+        logging.error(format_message(err))
+        raise RuntimeError(err)
+
     date_info = date_response.json()
     data['expiry_date'] = date_info['search_expires']
     data['search_date'] = date_info['prev_working']
+    data['cert_no'] = cert_no
 
     uri = app.config['LAND_CHARGES_URI'] + '/searches'
     response = requests.post(uri, data=json.dumps(data), headers=get_headers({'Content-Type': 'application/json'}))
@@ -999,10 +1012,8 @@ def build_fee_data(data, appn, fee_details, action):
         # TODO: still need to sort out serach certificate no
         if fee_details['delivery'] == 'Postal':
             transaction_code = 'PS'
-            search_appn = str(appn[0]) + 'P'
         else:
             transaction_code = 'XS'
-            search_appn = str(appn[0]) + 'D'
 
         fee = {'transaction_code': transaction_code,
                'key_number': data['customer']['key_number'],
@@ -1011,7 +1022,7 @@ def build_fee_data(data, appn, fee_details, action):
 
         fee_data = {'fee_info': fee,
                     'reg_no': ' ',
-                    'appn_no': search_appn,
+                    'appn_no': data['search_appn'],
                     'fee_factor': fee_details['fee_factor']}
 
         # call legacy_adapter to process fee for search and return
@@ -1021,7 +1032,7 @@ def build_fee_data(data, appn, fee_details, action):
         if response.status_code == 200:
             return response.status_code
         else:
-            err = 'Failed to call fee_process for ' + search_appn + '. Error code:' \
+            err = 'Failed to call fee_process for ' + data['search_appn'] + '. Error code:' \
                   + str(response.status_code)
 
             logging.error(format_message(err))
