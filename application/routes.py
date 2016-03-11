@@ -19,7 +19,7 @@ from application.ocr import recognise
 import traceback
 from PIL import Image, ImageDraw, ImageFont, TiffImagePlugin
 import os
-from application.oc import create_document
+from application.oc import create_document, create_document_only
 
 
 valid_types = ['all', 'pab', 'wob',
@@ -474,6 +474,26 @@ def get_registered_forms(date, reg_no):
         complete(cursor)
 
 
+@app.route('/registered_search_forms/<request_id>', methods=['GET'])
+def get_registered_search_forms(request_id):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('select doc_id from registered_documents '
+                       'where request_id=%(id)s', {
+                           'id': request_id
+                       })
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            return Response(status=404)
+
+        result = {
+            'document_id': rows[0]['doc_id']
+        }
+        return Response(json.dumps(result), status=200, mimetype='application/json')
+    finally:
+        complete(cursor)
+
+
 @app.route('/registered_forms/<date>/<reg_no>', methods=['DELETE'])
 def delete_all_reg_forms(date, reg_no):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
@@ -488,6 +508,20 @@ def delete_all_reg_forms(date, reg_no):
     finally:
         complete(cursor)
 
+
+@app.route('/registered_search_forms/<request_id>', methods=['DELETE'])
+def delete_all_search_forms(request_id):
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('delete from registered_documents '
+                       'where request_id=%(id)s', {
+                           'id': request_id
+                       })
+        return Response(status=200)
+
+    # TODO: also remove form from documents table?
+    finally:
+        complete(cursor)
 
 # =========== OTHER ROUTES ==============
 @app.route('/keyholders/<key_number>', methods=['GET'])
@@ -593,9 +627,22 @@ def post_search():
     if date_response.status_code != 200:
         raise RuntimeError("Unexpected return from legacy_adapter/dates: " + str(date_response.status_code))
 
+    # call legacy_adapter to retrieve the next search number
+    url = app.config['LEGACY_ADAPTER_URI'] + '/search_number'
+    response = requests.get(url, headers=get_headers())
+    if response.status_code == 200:
+        cert_no = response.text
+    else:
+        err = 'Failed to call search_number. Error code:' \
+              + str(response.status_code)
+
+        logging.error(format_message(err))
+        raise RuntimeError(err)
+
     date_info = date_response.json()
     data['expiry_date'] = date_info['search_expires']
     data['search_date'] = date_info['prev_working']
+    data['cert_no'] = cert_no
 
     uri = app.config['LAND_CHARGES_URI'] + '/searches'
     response = requests.post(uri, data=json.dumps(data), headers=get_headers({'Content-Type': 'application/json'}))
@@ -603,8 +650,17 @@ def post_search():
 
     # store result
     response_data = response.json()
-    # process fee info
-    build_fee_data(data, response_data, data['fee_details'], 'search')
+    logging.debug(json.dumps(response_data))
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        # process fee info
+        if data['fee_details']['type'] == 'dd':
+            build_fee_data(data, response_data, data['fee_details'], 'search')
+        store_image_for_later(cursor, data['document_id'], None, None, response_data[0])
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
 
     cursor = connect()
     for req_id in response_data:
@@ -622,151 +678,15 @@ def get_office_copy():
     class_of_charge = request.args['class']
     reg_no = request.args['reg_no']
     date = request.args['date']
-    if 'pdf' in request.args:
-        return_pdf = True
-    else:
-        return_pdf = False
     uri = app.config['LAND_CHARGES_URI'] + '/office_copy' + '?class=' + class_of_charge + '&reg_no=' + reg_no + \
         '&date=' + date
     response = requests.get(uri, headers=get_headers({'Content-Type': 'application/json'}))
     logging.info('GET {} -- {}'.format(uri, response.text))
     data = json.loads(response.text)
-    size = (992, 1430)
-    cl_white = (255, 255, 255)
-    cl_black = (0, 0, 0)
-    cl_grey = (178, 178, 178)
-    arial = 'arial.ttf'
-    arialbold = 'arialbd.ttf'
-    fs_main = 28
-    fs_sub = 24
-    fs_sub_title = 20
-    fs_text = 16
-    fs_footer = 12
-
-    im = Image.new('RGB', size, cl_white)
-    draw = ImageDraw.Draw(im)
-    cursor_pos = 50
-    draw_text(draw, (140, cursor_pos), 'Application for Registration of Petition in Bankruptcy', arialbold, fs_main, 
-              cl_black)
-    cursor_pos += 50
-    draw_text(draw, (170, cursor_pos), 'This is an official copy of the data provided by the Insolvency',
-              arial, fs_sub, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (210, cursor_pos), 'Service to register a Pending Action in Bankruptcy', arial, fs_sub, cl_black)
-    cursor_pos += 80
-    draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, fs_sub_title, cl_black)
-    cursor_pos += 30
-    draw.line((100, cursor_pos, (im.size[1]-300), cursor_pos), fill=0)
-    cursor_pos += 30
-    label_pos = 150
-    data_pos = 400
-    draw_text(draw, (label_pos, cursor_pos), 'Reference: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['application_ref'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (label_pos, cursor_pos), 'Key Number: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['key_number'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (label_pos, cursor_pos), 'Date: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['application_date'], arial, fs_text, cl_black)
-    cursor_pos += 50
-    draw_text(draw, (100, cursor_pos), 'Particulars of Debtor:', arialbold, fs_sub_title, cl_black)
-
-    cursor_pos += 30
-    draw.line((100, cursor_pos, (im.size[1]-300), cursor_pos), fill=0)
-
-    if 'debtor_names' in data:
-        name_count = 1
-        for debtor_name in data['debtor_names']:
-            if name_count == 1:
-                cursor_pos += 30
-                draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, fs_text, cl_black)
-            elif name_count == 2:
-                cursor_pos += 30
-                draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, fs_text, cl_black)
-            else:
-                cursor_pos += 25
-            debtor_forenames = ""
-            for forenames in debtor_name['forenames']:
-                debtor_forenames += forenames + " "
-            debtor_forenames = debtor_forenames.strip()
-            draw_text(draw, (data_pos, cursor_pos), debtor_forenames + " " + debtor_name['surname'], arial,
-                      fs_text, cl_black)
-            name_count += 1
-    # cursor_pos += 50
-    # draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, 22, clBlack)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Date of Birth: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['date_of_birth'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Gender: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['gender'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Residence: ', arial, fs_text, cl_black)
-    if data['residence_withheld']:
-        draw_text(draw, (data_pos, cursor_pos), "DEBTORS ADDRESS IS STATED TO BE UNKNOWN", arial, fs_text, cl_black)
-    else:
-        cursor_pos -= 40
-        for address in data['residence']:
-            cursor_pos += 40
-            for address_line in address['address_lines']:
-                draw_text(draw, (data_pos, cursor_pos), address_line, arial, fs_text, cl_black)
-                cursor_pos += 25
-            draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, cl_black)
-            cursor_pos += 25
-            draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Business Address: ', arial, fs_text, cl_black)
-    if 'business_address' in data:
-        draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, fs_text, cl_black)
-    cursor_pos += 30
-    draw_text(draw, (150, cursor_pos), 'Investment Property: ', arial, fs_text, cl_black)
-    if 'investment_property' in data:
-        draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, fs_text, cl_black)
-    cursor_pos = 1250
-    left_pos = 50
-    draw_text(draw, (left_pos, cursor_pos), 'Land Registry', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Land Charges Department', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Seaton Court', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), '2 William Prance Road', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'Plymouth', arial, fs_footer, cl_grey)
-    cursor_pos += 20
-    draw_text(draw, (left_pos, cursor_pos), 'PL6 5WS', arial, fs_footer, cl_grey)
-    del draw
-    image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/images')
-    file_name = 'officeopy_'+class_of_charge + '_' + reg_no + '_' + date
-    if return_pdf:
-        file_path = os.path.join(image_path, 'output.pdf')
-        im.save(file_path, 'PDF', resolution=120.0)
-        file_name += '.pdf'
-    else:
-        TiffImagePlugin.WRITE_LIBTIFF = True
-        file_path = os.path.join(image_path, 'output.tiff')
-        im.save(file_path, compression="tiff_lzw", resolution=120.0)
-        TiffImagePlugin.WRITE_LIBTIFF = False
-        file_name += '.tiff'
-
-    with open(file_path, 'rb') as f:
-        contents = f.read()
+    contents, file_name = create_document_only(data, app.config)
     response = send_file(BytesIO(contents), as_attachment=True, attachment_filename=file_name)
-    os.remove(file_path)
     return response
 
-
-def draw_text(canvas, text_pos, text, font_name, font_size, font_color):
-    fonts_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'application/static/fonts')
-    fnt = ImageFont.truetype(os.path.join(fonts_path, font_name), font_size)
-    canvas.text(text_pos, text, font_color, font=fnt)
-    return "ok"
 
 # ========= Dev Routes ==============
 
@@ -951,7 +871,7 @@ def load_results():
 def set_result_status(result_id):
     cursor = connect()
     json_data = request.get_json(force=True)
-    
+
     try:
         if 'print_status' in json_data:
             cursor.execute('UPDATE results set print_status = %(result_status)s WHERE id = %(result_id)s',
@@ -971,17 +891,17 @@ def set_result_status(result_id):
 def get_result(result_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     job = None
-    
+
     try:
         cursor.execute("SELECT id, request_id, res_type FROM results Where id = %(id)s", {'id': result_id})
         rows = cursor.fetchall()
-        
+
         if len(rows) > 0:
             job = {
                 'id': rows[0]['id'],
                 'request_id': rows[0]['request_id'],
                 'res_type': rows[0]['res_type']
-            }        
+            }
     finally:
         complete(cursor)
     if job is None:
@@ -1089,11 +1009,12 @@ def reclassify_form():
     data = request.get_json(force=True)
     appn_id = data['appn_id']
     form_type = data['form_type']
-    logging.info("T:%s Reclassify %s Application ", data['appn_id'], data['form_type'])
+    logging.info("T:%s Reclassify as a %s Application ", str(appn_id), str(form_type))
     work_type = get_work_type(form_type)
-    logging.info("as ", work_type["list_title"])
+    logging.info("move to ", work_type["list_title"])
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
+        unlock_application(appn_id)
         reclassify_appn(cursor, appn_id, form_type, work_type["work_type"])
     finally:
         complete(cursor)
@@ -1132,13 +1053,10 @@ def build_fee_data(data, appn, fee_details, action):
             logging.error(format_message(err))
             raise RuntimeError(err)
     elif action == 'search':
-        # TODO: still need to sort out serach certificate no
         if fee_details['delivery'] == 'Postal':
             transaction_code = 'PS'
-            search_appn = str(appn[0]) + 'P'
         else:
             transaction_code = 'XS'
-            search_appn = str(appn[0]) + 'D'
 
         fee = {'transaction_code': transaction_code,
                'key_number': data['customer']['key_number'],
@@ -1147,17 +1065,17 @@ def build_fee_data(data, appn, fee_details, action):
 
         fee_data = {'fee_info': fee,
                     'reg_no': ' ',
-                    'appn_no': search_appn,
+                    'appn_no': data['cert_no'],
                     'fee_factor': fee_details['fee_factor']}
 
         # call legacy_adapter to process fee for search and return
         logging.debug("fee information" + json.dumps(fee_data))
         url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
-        response = requests.post(url, data=fee_data, headers=get_headers())
+        response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
         if response.status_code == 200:
             return response.status_code
         else:
-            err = 'Failed to call fee_process for ' + search_appn + '. Error code:' \
+            err = 'Failed to call fee_process for ' + data['cert_no'] + '. Error code:' \
                   + str(response.status_code)
 
             logging.error(format_message(err))
@@ -1175,15 +1093,15 @@ def build_fee_data(data, appn, fee_details, action):
         fee_data = {'fee_info': fee}
         if action == 'cancel':
             fee_data['reg_no'] = number
-            fee_data['appn_no'] = reg['number']
+            fee_data['appn_no'] = str(reg['number'])
         else:
-            fee_data['reg_no'] = reg['number']
-            fee_data['appn_no'] = reg['number']
+            fee_data['reg_no'] = str(reg['number'])
+            fee_data['appn_no'] = str(reg['number'])
         fee_data['fee_factor'] = fee_details['fee_factor']
 
         logging.debug("fee information" + json.dumps(fee_data))
         url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
-        response = requests.post(url, data=fee_data, headers=get_headers())
+        response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
         if response.status_code != 200:
             err = 'Failed to call fee_process for ' + str(fee_data['appn_no']) + '. Error code:' \
                   + str(response.status_code)

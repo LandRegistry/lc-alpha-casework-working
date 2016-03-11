@@ -324,11 +324,15 @@ def create_lc_registration(data):
     return registration
 
 
-def store_image_for_later(cursor, document_id, reg_no, reg_date):
-    cursor.execute('INSERT INTO registered_documents (number, date, doc_id) '
-                   'VALUES( %(num)s, %(date)s, %(doc)s ) RETURNING id', {
-                       'num': reg_no, 'date': reg_date, 'doc': document_id
-                   })
+def store_image_for_later(cursor, document_id, reg_no=None, reg_date=None, request_id=None):
+    try:
+        cursor.execute('INSERT INTO registered_documents (number, date, doc_id, request_id) '
+                       'VALUES( %(num)s, %(date)s, %(doc)s, %(request)s ) RETURNING id', {
+                           'num': reg_no, 'date': reg_date, 'doc': document_id, 'request': request_id
+                       })
+    except:
+        raise
+    return 'success'
 
 
 def complete_application(cursor, appn_id, data):
