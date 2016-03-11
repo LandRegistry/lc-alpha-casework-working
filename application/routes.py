@@ -85,7 +85,7 @@ def health():
 @app.before_request
 def before_request():
     msg = "{} {} [{}]".format(request.method, request.url, request.remote_addr)
-    logging.info(format_message(msg))
+    #logging.info(format_message(msg))
     pass
 
 
@@ -106,6 +106,7 @@ def get_applications():
     if list_type not in valid_types:
         return Response("Error: '" + list_type + "' is not one of the accepted work list types", status=400)
 
+    logging.info(format_message('Get worklist %s'), list_type)
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         applications = get_application_list(cursor, list_type)
@@ -144,6 +145,7 @@ def create_application():
 
 @app.route('/applications/<appn_id>/lock', methods=['POST'])
 def lock_application(appn_id):
+    logging.info(format_message("Lock application"))
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         locked = set_lock_ind(cursor, appn_id)
@@ -158,6 +160,7 @@ def lock_application(appn_id):
 
 @app.route('/applications/<appn_id>/lock', methods=['DELETE'])
 def unlock_application(appn_id):
+    logging.info(format_message("Unlock application"))
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         clear_lock_ind(cursor, appn_id)
@@ -204,6 +207,8 @@ def update_application(appn_id):
     if 'action' in request.args:
         action = request.args['action']
 
+    logging.debug(request.headers)
+
     data = request.get_json(force=True)
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     # store fee info for later use. Quick fix because of data structure in rectifications
@@ -216,16 +221,21 @@ def update_application(appn_id):
 
     try:
         if action == 'store':
+            logging.info(format_message("Store application"))
             update_application_details(cursor, appn_id, data)
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
+            logging.info(format_message("Complete registration"))
             appn = complete_application(cursor, appn_id, data)
         elif action == 'amend' or action == 'rectify':
+            logging.info(format_message("Complete update"))
             appn = amend_application(cursor, appn_id, data)
         elif action == 'cancel':
+            logging.info(format_message("Complete cancellation"))
             appn = cancel_application(cursor, appn_id, data)
             print("appn : ", str(appn))
         elif action == 'correction':
+            logging.info(format_message("Complete correction"))
             appn = correct_application(cursor, data)
         else:
             return Response("Invalid action", status=400)
