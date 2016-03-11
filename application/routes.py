@@ -578,11 +578,11 @@ def insert_complex_name(name, number):
     return Response(json.dumps(result), status=response.status_code, mimetype='application/json')
 
 
-@app.route('/court_check/<court>/<ref>', methods=['GET'])
-def court_ref_existence_check(court, ref):
+@app.route('/court_check/<ref>', methods=['GET'])
+def court_ref_existence_check(ref):
     logging.debug("Court existence checking")
 
-    url = app.config['LAND_CHARGES_URI'] + '/court_check/' + court + '/' + ref
+    url = app.config['LAND_CHARGES_URI'] + '/court_check/' + ref
     response = requests.get(url, headers=get_headers())
     return Response(response.text, status=response.status_code, mimetype='application/json')
 
