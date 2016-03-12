@@ -67,42 +67,82 @@ def get_work_type(application_type):
     return work_type
 
 
-def get_application_list(cursor, list_type):
+def get_application_list(cursor, list_type, state='ALL'):
     bank_regn_type = ''
     if list_type == 'pab':
         bank_regn_type = 'PA(B)'
     elif list_type == 'wob':
         bank_regn_type = 'WO(B)'
 
-    if list_type == 'all':
-        cursor.execute(" SELECT id, date_received, application_data, application_type, status, work_type, "
-                       " delivery_method "
-                       " FROM pending_application "
-                       " WHERE lock_ind IS NULL AND stored IS NULL "
-                       " order by date_received desc")
-    elif bank_regn_type != '':
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
-                       " delivery_method "
-                       " FROM pending_application "
-                       " WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL AND stored IS NULL "
-                       " order by date_received desc",
-                       {"bank_regn_type": bank_regn_type})
-    elif list_type == 'stored':
-        cursor.execute(" SELECT id, date_received, application_data, application_type, status, work_type, "
-                       " store_time, store_reason, stored_by "
-                       " FROM pending_application "
-                       " WHERE lock_ind IS NULL AND stored='y' "
-                       " order by date_received desc")
+    if state == 'NEW':
+        if list_type == 'all':
+            cursor.execute(" SELECT id, date_received, application_data, application_type, status, work_type, "
+                           " delivery_method, stored, store_time, stored_by, store_reason "
+                           " FROM pending_application "
+                           " WHERE lock_ind IS NULL AND stored IS NULL "
+                           " order by date_received desc")
+        elif bank_regn_type != '':
+            cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                           " delivery_method, stored, store_time, stored_by, store_reason "
+                           " FROM pending_application "
+                           " WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL AND stored IS NULL "
+                           " order by date_received desc",
+                           {"bank_regn_type": bank_regn_type})
+        else:
+            cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                           " delivery_method, stored, store_time, stored_by, store_reason "
+                           " FROM pending_application "
+                           " WHERE work_type=%(list_type)s AND lock_ind IS NULL AND stored IS NULL "
+                           " order by date_received", {"list_type": list_type})
+    elif state == 'STORED':
+        if list_type == 'all':
+            cursor.execute(" SELECT id, date_received, application_data, application_type, status, work_type, "
+                           " delivery_method, stored, store_time, stored_by, store_reason "
+                           " FROM pending_application "
+                           " WHERE lock_ind IS NULL AND stored ='t' "
+                           " order by date_received desc")
+        elif bank_regn_type != '':
+            cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                           " delivery_method, stored, store_time, stored_by, store_reason "
+                           " FROM pending_application "
+                           " WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL AND stored ='t' "
+                           " order by date_received desc",
+                           {"bank_regn_type": bank_regn_type})
+        else:
+            cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                           " delivery_method, stored, store_time, stored_by, store_reason "
+                           " FROM pending_application "
+                           " WHERE work_type=%(list_type)s AND lock_ind IS NULL AND stored ='t' "
+                           " order by date_received", {"list_type": list_type})
     else:
-        cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
-                       " delivery_method "
-                       " FROM pending_application "
-                       " WHERE work_type=%(list_type)s AND lock_ind IS NULL AND stored IS NULL "
-                       " order by date_received", {"list_type": list_type})
+        if list_type == 'all':
+            cursor.execute(" SELECT id, date_received, application_data, application_type, status, work_type, "
+                           " delivery_method, stored, store_time, stored_by, store_reason "
+                           " FROM pending_application "
+                           " WHERE lock_ind IS NULL "
+                           " order by date_received desc")
+        elif bank_regn_type != '':
+            cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                           " delivery_method, stored, store_time, stored_by, store_reason "
+                           " FROM pending_application "
+                           " WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL "
+                           " order by date_received desc",
+                           {"bank_regn_type": bank_regn_type})
+        else:
+            cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
+                           " delivery_method, stored, store_time, stored_by, store_reason "
+                           " FROM pending_application "
+                           " WHERE work_type=%(list_type)s AND lock_ind IS NULL "
+                           " order by date_received", {"list_type": list_type})
+
     rows = cursor.fetchall()
     applications = []
 
     for row in rows:
+        stored = False
+        if row['stored']:
+            stored = True
+
         result = {
             "appn_id": row['id'],
             "application_data": row['application_data'],
@@ -110,11 +150,12 @@ def get_application_list(cursor, list_type):
             "application_type": row['application_type'],
             "status": row['status'],
             "work_type": row['work_type'],
-            "delivery_method": row['delivery_method']
+            "delivery_method": row['delivery_method'],
+            "stored": stored
         }
 
-        if 'store_time' in row:
-            result['store_time'] = row['store_time']
+        if stored:
+            result['store_time'] = row['store_time'].strftime('%Y-%m-%d %H:%M:%S')
             result['stored_by'] = row['stored_by']
             result['store_reason'] = row['store_reason']
 

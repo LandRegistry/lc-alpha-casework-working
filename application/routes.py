@@ -102,15 +102,20 @@ def after_request(response):
 @app.route('/applications', methods=['GET'])
 def get_applications():
     list_type = 'all'
+    state = 'all'
     if 'type' in request.args:
         list_type = request.args['type']
+
+    if 'state' in request.args:
+        state = request.args['state'].upper()
+
     if list_type not in valid_types:
         return Response("Error: '" + list_type + "' is not one of the accepted work list types", status=400)
 
     logging.info(format_message('Get worklist %s'), list_type)
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        applications = get_application_list(cursor, list_type)
+        applications = get_application_list(cursor, list_type, state)
     finally:
         complete(cursor)
 
