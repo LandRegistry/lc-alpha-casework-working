@@ -165,7 +165,7 @@ def get_application_list(cursor, list_type, state='ALL'):
 
 def get_application_by_id(cursor, appn_id):
     cursor.execute("SELECT date_received, application_data, application_type, status, work_type, " +
-                   "delivery_method "
+                   "delivery_method, stored, stored_by, store_reason, store_time "
                    "FROM pending_application "
                    "WHERE id=%(id)s", {"id": appn_id})
     rows = cursor.fetchall()
@@ -173,6 +173,11 @@ def get_application_by_id(cursor, appn_id):
     if len(rows) == 0:
         return None
     row = rows[0]
+
+    stored = False
+    if row['stored']:
+        stored = True
+
     return {
         "appn_id": appn_id,
         "application_data": row['application_data'],
@@ -180,7 +185,8 @@ def get_application_by_id(cursor, appn_id):
         "application_type": row['application_type'],
         "status": row['status'],
         "work_type": row['work_type'],
-        "delivery_method": row['delivery_method']
+        "delivery_method": row['delivery_method'],
+        "stored": stored
     }
 
 
