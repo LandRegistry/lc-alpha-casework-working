@@ -76,22 +76,28 @@ def get_application_list(cursor, list_type):
 
     if list_type == 'all':
         cursor.execute(" SELECT id, date_received, application_data, application_type, status, work_type, "
-                       " assigned_to, delivery_method "
+                       " delivery_method "
                        " FROM pending_application "
-                       " WHERE lock_ind IS NULL "
+                       " WHERE lock_ind IS NULL AND stored IS NULL "
                        " order by date_received desc")
     elif bank_regn_type != '':
         cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
-                       " assigned_to, delivery_method "
+                       " delivery_method "
                        " FROM pending_application "
-                       " WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL "
+                       " WHERE application_type=%(bank_regn_type)s AND lock_ind IS NULL AND stored IS NULL "
                        " order by date_received desc",
                        {"bank_regn_type": bank_regn_type})
+    elif list_type == 'stored':
+        cursor.execute(" SELECT id, date_received, application_data, application_type, status, work_type, "
+                       " store_time, store_reason, stored_by "
+                       " FROM pending_application "
+                       " WHERE lock_ind IS NULL AND stored='y' "
+                       " order by date_received desc")
     else:
         cursor.execute("SELECT id, date_received, application_data, application_type, status, work_type, "
-                       " assigned_to, delivery_method "
+                       " delivery_method "
                        " FROM pending_application "
-                       " WHERE work_type=%(list_type)s AND lock_ind IS NULL "
+                       " WHERE work_type=%(list_type)s AND lock_ind IS NULL AND stored IS NULL "
                        " order by date_received", {"list_type": list_type})
     rows = cursor.fetchall()
     applications = []
@@ -104,15 +110,20 @@ def get_application_list(cursor, list_type):
             "application_type": row['application_type'],
             "status": row['status'],
             "work_type": row['work_type'],
-            "assigned_to": row['assigned_to'],
             "delivery_method": row['delivery_method']
         }
+
+        if 'store_time' in row:
+            result['store_time'] = row['store_time']
+            result['stored_by'] = row['stored_by']
+            result['store_reason'] = row['store_reason']
+
         applications.append(result)
     return applications
 
 
 def get_application_by_id(cursor, appn_id):
-    cursor.execute("SELECT date_received, application_data, application_type, status, work_type, assigned_to, " +
+    cursor.execute("SELECT date_received, application_data, application_type, status, work_type, " +
                    "delivery_method "
                    "FROM pending_application "
                    "WHERE id=%(id)s", {"id": appn_id})
@@ -128,7 +139,6 @@ def get_application_by_id(cursor, appn_id):
         "application_type": row['application_type'],
         "status": row['status'],
         "work_type": row['work_type'],
-        "assigned_to": row['assigned_to'],
         "delivery_method": row['delivery_method']
     }
 
@@ -148,13 +158,12 @@ def clear_lock_ind(cursor, appn_id):
                    "WHERE id=%(id)s", {"id": appn_id})
 
 
-def update_application_details(cursor, appn_id, data):
-    cursor.execute("UPDATE pending_application SET application_data=%(data)s, status=%(status)s, "
-                   "assigned_to=%(assign)s WHERE id=%(id)s", {
-                       "data": data['application_data'],
-                       "status": data['status'],
-                       "assign": data['assigned_to'],
-                       "id": appn_id
+def store_application(cursor, appn_id, data):
+    cursor.execute("UPDATE pending_application SET stored='y', application_data=%(what)s, stored_by=%(who)s, "
+                   "store_reason=%(why)s, store_time=%(when)s "
+                   "WHERE id=%(id)s", {
+                       'what': json.dumps(data['data']), 'who': data['who'], 'why': data['reason'],
+                       'when': datetime.now(), 'id': appn_id
                    })
 
 
