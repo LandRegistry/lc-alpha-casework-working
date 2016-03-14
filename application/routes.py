@@ -678,6 +678,28 @@ def get_office_copy():
     return response
 
 
+@app.route('/assoc_image', methods=['PUT'])
+def associate_image():
+    data = request.get_json(force=True)
+    logging.debug(json.dumps(data))
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute("UPDATE registered_documents SET doc_id = %(doc_id)s " +
+                       "WHERE number=%(reg)s and date=%(date)s",
+                       {
+                           "doc_id": data['document_id'], "reg": int(data['reg_no']), "date": data['date']
+                       })
+        rows = cursor.rowcount
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
+    if rows == 0:
+        return Response(status=404, mimetype='application/json')
+    else:
+        return Response(status=200, mimetype='application/json')
+
+
 # ========= Dev Routes ==============
 
 
