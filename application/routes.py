@@ -700,14 +700,17 @@ def associate_image():
                            "doc_id": data['document_id'], "reg": int(data['reg_no']), "date": data['date']
                        })
         rows = cursor.rowcount
+        if rows == 0:
+            status_code = 404
+        else:
+            delete_application(cursor, data['appn_id'])
+            status_code = 200
         complete(cursor)
     except:
         rollback(cursor)
         raise
-    if rows == 0:
-        return Response(status=404, mimetype='application/json')
-    else:
-        return Response(status=200, mimetype='application/json')
+
+    return Response(status=status_code, mimetype='application/json')
 
 
 # ========= Dev Routes ==============
