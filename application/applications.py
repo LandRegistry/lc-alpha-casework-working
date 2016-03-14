@@ -15,6 +15,10 @@ def get_headers(headers=None):
 
     if 'X-Transaction-ID' in request.headers:
         headers['X-Transaction-ID'] = request.headers['X-Transaction-ID']
+
+    if 'X-LC-Username' in request.headers:
+        headers['X-LC-Username'] = request.headers['X-LC-Username']
+
     return headers
 
 
@@ -155,7 +159,7 @@ def update_application_details(cursor, appn_id, data):
 
 
 def delete_application(cursor, appn_id):
-    logging.info('DELETE from pending_application where id=%s', appn_id)
+    logging.debug('DELETE from pending_application where id=%s', appn_id)
     cursor.execute('DELETE from pending_application where id=%(id)s', {'id': appn_id})
     return cursor.rowcount
 
@@ -425,8 +429,10 @@ def cancel_application(cursor, appn_id, data):
     return regns
 
 
-def get_registration_details(reg_date, reg_no):
+def get_registration_details(reg_date, reg_no, class_of_charge=None):
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + reg_date + '/' + reg_no
+    if (class_of_charge != None):
+        url += '?class_of_charge=' + class_of_charge
     response = requests.get(url, headers=get_headers())
     if response.status_code != 200:
         return {"data": "could not find registration for " + reg_no + " " + reg_date, "status": response.status_code}
