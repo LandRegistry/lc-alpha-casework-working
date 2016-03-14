@@ -696,6 +696,31 @@ def get_office_copy():
     return response
 
 
+@app.route('/assoc_image', methods=['PUT'])
+def associate_image():
+    data = request.get_json(force=True)
+    logging.debug(json.dumps(data))
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute("UPDATE registered_documents SET doc_id = %(doc_id)s " +
+                       "WHERE number=%(reg)s and date=%(date)s",
+                       {
+                           "doc_id": data['document_id'], "reg": int(data['reg_no']), "date": data['date']
+                       })
+        rows = cursor.rowcount
+        if rows == 0:
+            status_code = 404
+        else:
+            delete_application(cursor, data['appn_id'])
+            status_code = 200
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
+
+    return Response(status=status_code, mimetype='application/json')
+
+
 # ========= Dev Routes ==============
 
 
@@ -1002,10 +1027,13 @@ def get_searches():
 
 @app.route('/registrations/<reg_date>/<reg_name>', methods=['GET'])
 def get_registration(reg_date, reg_name):
-    response = get_registration_details(reg_date, reg_name)
-    logging.debug("HERE!!!!!!!")
+    if "class_of_charge" in request.args:
+        class_of_charge = request.args["class_of_charge"]
+    else:
+        class_of_charge = None
+    response = get_registration_details(reg_date, reg_name, class_of_charge)
     logging.debug(response['data'])
-    logging.debug("AND HERE!!!!!!!")
+
     if response['status'] != 200:
         return Response(json.dumps(response['data']), status=response['status'], mimetype='application/json')
     else:
@@ -1118,3 +1146,10 @@ def build_fee_data(data, appn, fee_details, action):
             raise RuntimeError(err)
 
     return
+
+
+@app.route('/multi_reg_check/<reg_date>/<reg_no>', methods=['GET'])
+def get_multi_reg_check(reg_date, reg_no):
+    url = app.config['LAND_CHARGES_URI'] + '/multi_reg_check/' + reg_date + "/" + reg_no
+    data = requests.get(url, headers=get_headers())
+    return Response(data, status=200, mimetype='application/json')

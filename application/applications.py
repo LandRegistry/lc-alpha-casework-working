@@ -485,8 +485,10 @@ def cancel_application(cursor, appn_id, data):
     return regns
 
 
-def get_registration_details(reg_date, reg_no):
+def get_registration_details(reg_date, reg_no, class_of_charge=None):
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + reg_date + '/' + reg_no
+    if (class_of_charge != None):
+        url += '?class_of_charge=' + class_of_charge
     response = requests.get(url, headers=get_headers())
     if response.status_code != 200:
         return {"data": "could not find registration for " + reg_no + " " + reg_date, "status": response.status_code}
