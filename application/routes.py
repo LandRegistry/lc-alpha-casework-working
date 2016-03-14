@@ -994,10 +994,13 @@ def get_searches():
 
 @app.route('/registrations/<reg_date>/<reg_name>', methods=['GET'])
 def get_registration(reg_date, reg_name):
-    response = get_registration_details(reg_date, reg_name)
-    logging.debug("HERE!!!!!!!")
+    if "class_of_charge" in request.args:
+        class_of_charge = request.args["class_of_charge"]
+    else:
+        class_of_charge = None
+    response = get_registration_details(reg_date, reg_name, class_of_charge)
     logging.debug(response['data'])
-    logging.debug("AND HERE!!!!!!!")
+
     if response['status'] != 200:
         return Response(json.dumps(response['data']), status=response['status'], mimetype='application/json')
     else:
@@ -1110,3 +1113,10 @@ def build_fee_data(data, appn, fee_details, action):
             raise RuntimeError(err)
 
     return
+
+
+@app.route('/multi_reg_check/<reg_date>/<reg_no>', methods=['GET'])
+def get_multi_reg_check(reg_date, reg_no):
+    url = app.config['LAND_CHARGES_URI'] + '/multi_reg_check/' + reg_date + "/" + reg_no
+    data = requests.get(url, headers=get_headers())
+    return Response(data, status=200, mimetype='application/json')
