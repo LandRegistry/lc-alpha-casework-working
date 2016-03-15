@@ -8,7 +8,7 @@ import psycopg2.extras
 import requests
 from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
-    update_application_details, bulk_insert_applications, complete_application, delete_application, \
+    bulk_insert_applications, complete_application, delete_application, store_application, \
     amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, \
     get_registration_details, store_image_for_later, get_headers, correct_application, get_work_type, reclassify_appn
 from application.documents import get_document, get_image, get_raw_image
@@ -23,10 +23,11 @@ from application.oc import create_document, create_document_only
 
 
 valid_types = ['all', 'pab', 'wob',
-               'bank', 'bank_regn', 'bank_amend', 'bank_rect', 'bank_with', 'bank_stored',
-               'lc_regn', 'lc', 'lc_pn', 'lc_rect', 'lc_renewal', 'lc_stored',
-               'amend', 'cancel', 'canc', 'cancel_part', 'cancel_stored',
-               'prt_search', 'search', 'search_full', 'search_bank', 'oc', 'unknown']
+               'bank', 'bank_regn', 'bank_amend', 'bank_rect', 'bank_with',
+               'lc_regn', 'lc', 'lc_pn', 'lc_rect', 'lc_renewal',
+               'amend', 'cancel', 'canc', 'cancel_part',
+               'prt_search', 'search', 'search_full', 'search_bank', 'oc', 'unknown',
+               'stored']
 
 
 @app.route('/', methods=["GET"])
@@ -101,15 +102,20 @@ def after_request(response):
 @app.route('/applications', methods=['GET'])
 def get_applications():
     list_type = 'all'
+    state = 'all'
     if 'type' in request.args:
         list_type = request.args['type']
+
+    if 'state' in request.args:
+        state = request.args['state'].upper()
+
     if list_type not in valid_types:
         return Response("Error: '" + list_type + "' is not one of the accepted work list types", status=400)
 
     logging.info(format_message('Get worklist %s'), list_type)
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        applications = get_application_list(cursor, list_type)
+        applications = get_application_list(cursor, list_type, state)
     finally:
         complete(cursor)
 
@@ -222,7 +228,9 @@ def update_application(appn_id):
     try:
         if action == 'store':
             logging.info(format_message("Store application"))
-            update_application_details(cursor, appn_id, data)
+            logging.debug(data)
+            #update_application_details(cursor, appn_id, data)
+            store_application(cursor, appn_id, data)
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
             logging.info(format_message("Complete registration"))
