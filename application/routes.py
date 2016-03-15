@@ -401,6 +401,24 @@ def delete_image(doc_id, page_no):
     return Response(status=200)
 
 
+@app.route('/forms/<int:doc_id>', methods=['DELETE'])
+def delete_document(doc_id):
+    cursor = connect()
+    try:
+        cursor.execute("delete from documents where document_id=%(doc_id)s",
+                       {"doc_id": doc_id})
+
+        rowcount = cursor.rowcount
+        complete(cursor)
+    except:
+        rollback(cursor)
+        raise
+
+    if rowcount == 0:
+        return Response(status=404)
+    return Response(status=204)
+
+
 @app.route('/forms/<int:doc_id>', methods=["GET"])
 def get_document_info(doc_id):
     # retrieve page info for a document
