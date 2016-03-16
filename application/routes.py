@@ -10,7 +10,8 @@ from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     bulk_insert_applications, complete_application, delete_application, store_application, \
     amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, \
-    get_registration_details, store_image_for_later, get_headers, correct_application, get_work_type, reclassify_appn
+    get_registration_details, store_image_for_later, get_headers, correct_application, get_work_type, \
+    reclassify_appn, renew_application
 from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
@@ -86,7 +87,7 @@ def health():
 @app.before_request
 def before_request():
     msg = "{} {} [{}]".format(request.method, request.url, request.remote_addr)
-    #logging.info(format_message(msg))
+    # logging.info(format_message(msg))
     pass
 
 
@@ -229,7 +230,7 @@ def update_application(appn_id):
         if action == 'store':
             logging.info(format_message("Store application"))
             logging.debug(data)
-            #update_application_details(cursor, appn_id, data)
+            # update_application_details(cursor, appn_id, data)
             store_application(cursor, appn_id, data)
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
@@ -242,6 +243,9 @@ def update_application(appn_id):
             logging.info(format_message("Complete cancellation"))
             appn = cancel_application(cursor, appn_id, data)
             print("appn : ", str(appn))
+        elif action == 'renewal':
+            logging.info(format_message("Complete renewal"))
+            appn = renew_application(cursor, appn_id, data)
         elif action == 'correction':
             logging.info(format_message("Complete correction"))
             appn = correct_application(cursor, data)
@@ -550,6 +554,8 @@ def delete_all_search_forms(request_id):
         complete(cursor)
 
 # =========== OTHER ROUTES ==============
+
+
 @app.route('/keyholders/<key_number>', methods=['GET'])
 def get_keyholder(key_number):
     uri = app.config['LEGACY_ADAPTER_URI'] + '/keyholders/' + key_number
@@ -1088,6 +1094,12 @@ def build_fee_data(data, appn, fee_details, action):
                'reference': data['applicant']['reference'],
                'class_of_charge': data['class_of_charge']}
         reg_type = 'new registrations'
+    elif action == 'renewal':
+        fee = {'transaction_code': 'RN',
+               'key_number': data['applicant']['key_number'],
+               'reference': data['applicant']['reference'],
+               'class_of_charge': data['class_of_charge']}
+        reg_type = 'new_registrations'
     elif action == 'cancel':
         fee = {'transaction_code': 'CN',
                'key_number': data['applicant']['key_number'],

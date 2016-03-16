@@ -485,9 +485,34 @@ def cancel_application(cursor, appn_id, data):
     return regns
 
 
+def renew_application(cursor, appn_id, data):
+    # renew registration
+    print("renew req")
+    url = app.config['LAND_CHARGES_URI'] + '/renewals'
+    headers = get_headers({'Content-Type': 'application/json'})
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+    if response.status_code != 200:
+        logging.error(response.text)
+        raise RuntimeError("Unexpected response from /renewals: {}".format(response.status_code))
+    regns = response.json()
+    # Insert print job
+    insert_result_row(cursor, regns['request_id'], 'registration')
+    # Archive document
+    document_id = data['document_id']
+    # pages = get_document(cursor, document_id)
+    print("renewal reg nos", regns)
+    for regn in regns["new_registrations"]:
+        number = regn['number']
+        date = regn['date']
+        store_image_for_later(cursor, document_id, number, date)
+    # Delete work-item
+    delete_application(cursor, appn_id)
+    return regns
+
+
 def get_registration_details(reg_date, reg_no, class_of_charge=None):
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + reg_date + '/' + reg_no
-    if (class_of_charge != None):
+    if class_of_charge is not None:
         url += '?class_of_charge=' + class_of_charge
     response = requests.get(url, headers=get_headers())
     if response.status_code != 200:
