@@ -1183,3 +1183,11 @@ def get_multi_reg_check(reg_date, reg_no):
     url = app.config['LAND_CHARGES_URI'] + '/multi_reg_check/' + reg_date + "/" + reg_no
     data = requests.get(url, headers=get_headers())
     return Response(data, status=200, mimetype='application/json')
+
+
+@app.route('/next_registration_date/<date>', methods=['GET'])
+def get_next_date_for_registration(date):
+    url = app.config['LEGACY_ADAPTER_URI'] + '/dates/' + date
+    response = requests.get(url, headers=get_headers())
+    data = response.json()
+    return Response(json.dumps({'date': data['next_working']}), status=200, mimetype='application/json')
