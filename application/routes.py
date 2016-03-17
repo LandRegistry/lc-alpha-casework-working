@@ -1139,6 +1139,7 @@ def build_fee_data(data, appn, fee_details, action):
         url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
         response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
         if response.status_code == 200:
+            fee = response.text
             return response.status_code
         else:
             err = 'Failed to call fee_process for ' + data['cert_no'] + '. Error code:' \
