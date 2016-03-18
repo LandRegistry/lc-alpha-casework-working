@@ -1,5 +1,6 @@
 from application import app
 from application.logformat import format_message
+from application.error import ValidationError
 from flask import Response, request, send_from_directory, send_file,  url_for, g
 import json
 import logging
@@ -38,6 +39,7 @@ def index():
 
 @app.errorhandler(Exception)
 def error_handler(err):
+    logging.error(str(err))
     logging.error(format_message('Unhandled exception: ' + str(err)))
     call_stack = traceback.format_exc()
 
@@ -257,10 +259,17 @@ def update_application(appn_id):
                 # build the fee details to pass to legacy_adapter
                 build_fee_data(data, appn, fee_details, action)
         complete(cursor)
+        status = 200
+    except ValidationError as e:
+        rollback(cursor)
+        error_str = str(e)
+        error_dict = json.loads(error_str[1:-1])  # Exception seems to add quotes, annoyingly
+        appn = {"ValidationError": error_dict}
+        status = 400
     except:
         rollback(cursor)
         raise
-    return Response(json.dumps(appn), status=200)
+    return Response(json.dumps(appn), status=status)
 
 # ============ FORMS ==============
 
