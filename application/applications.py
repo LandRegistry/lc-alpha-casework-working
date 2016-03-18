@@ -1,5 +1,6 @@
 import json
 from application import app
+from application.error import ValidationError
 from application.documents import get_document, get_image
 import requests
 import logging
@@ -399,7 +400,12 @@ def complete_application(cursor, appn_id, data):
         response = requests.post(url, data=json.dumps(create_lc_registration(data)), headers=headers)
     else:  # banks registration
         response = requests.post(url, data=json.dumps(data['registration']), headers=headers)
-    if response.status_code != 200:
+
+    if response.status_code == 400:
+        logging.error(response.text)
+        raise ValidationError(response.text)
+
+    elif response.status_code != 200:
         logging.error(response.text)
         raise RuntimeError("Unexpected response from /registrations: {}".format(response.status_code))
 
