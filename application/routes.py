@@ -242,7 +242,6 @@ def update_application(appn_id):
         elif action == 'cancel':
             logging.info(format_message("Complete cancellation"))
             appn = cancel_application(cursor, appn_id, data)
-            print("appn : ", str(appn))
         elif action == 'renewal':
             logging.info(format_message("Complete renewal"))
             appn = renew_application(cursor, appn_id, data)
@@ -1140,6 +1139,7 @@ def build_fee_data(data, appn, fee_details, action):
         response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
         if response.status_code == 200:
             fee = response.text
+            save_request_fee(str(appn[0]), fee)
             return response.status_code
         else:
             err = 'Failed to call fee_process for ' + data['cert_no'] + '. Error code:' \
@@ -1175,8 +1175,26 @@ def build_fee_data(data, appn, fee_details, action):
 
             logging.error(format_message(err))
             raise RuntimeError(err)
+        else:
+            fee = response.text
+            save_request_fee(str(appn['request_id']), fee)
 
     return
+
+
+def save_request_fee(id, fee):
+    # Add transaction fee to the associated request
+    url = app.config['LAND_CHARGES_URI'] + '/request/' + id + "/" + fee
+    response = requests.put(url, headers=get_headers())
+    if response.status_code != 200:
+        err = 'Failed to store fee against request ' + id + '. Error code:' \
+              + str(response.status_code)
+
+        logging.error(format_message(err))
+        raise RuntimeError(err)
+
+    return Response(status=response.status_code, mimetype='application/json')
+
 
 
 @app.route('/multi_reg_check/<reg_date>/<reg_no>', methods=['GET'])
