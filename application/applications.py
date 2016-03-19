@@ -313,6 +313,7 @@ def create_lc_registration(data):
         "applicant": {
             "name": data['customer_name'],
             "address": data['customer_address'],
+            "address_type": data['address_type'],
             "key_number": data["key_number"],
             "reference": data['application_ref']
         }
@@ -474,6 +475,7 @@ def cancel_application(cursor, appn_id, data):
     # Cancel registration
     url = app.config['LAND_CHARGES_URI'] + '/cancellations'
     headers = get_headers({'Content-Type': 'application/json'})
+
     response = requests.post(url, data=json.dumps(data), headers=headers)
     if response.status_code != 200:
         logging.error(response.text)
