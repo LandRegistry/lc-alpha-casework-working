@@ -17,7 +17,7 @@ class Config(object):
     ERROR_QUEUE_NAME = os.getenv('ERROR_QUEUE_NAME', "errors")
     TEMP_DIRECTORY = os.getenv('TEMP_DIRECTORY', '/vagrant')
     LAND_CHARGES_URI = os.getenv('LAND_CHARGES_URL', 'http://localhost:5004')
-    #LEGACY_ADAPTER_URI = os.getenv('LEGACY_ADAPTER_URL', 'http://localhost:5007')  # VM
-    LEGACY_ADAPTER_URI = os.getenv('LEGACY_ADAPTER_URL', 'http://10.0.2.2:15007')   # Development IDE
+    LEGACY_ADAPTER_URI = os.getenv('LEGACY_ADAPTER_URL', 'http://localhost:5007')  # VM
+    #LEGACY_ADAPTER_URI = os.getenv('LEGACY_ADAPTER_URL', 'http://10.0.2.2:15007')   # Development IDE
     RESULT_GENERATE_URI = os.getenv('RESULTS_GENERATE_URL', 'http://10.0.2.2:5016')
     # IMAGE_DIRECTORY = '/home/vagrant/interim/'
