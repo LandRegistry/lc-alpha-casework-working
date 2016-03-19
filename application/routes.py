@@ -1,6 +1,6 @@
 from application import app
 from application.logformat import format_message
-from application.error import ValidationError
+from application.error import ValidationError, CaseworkAPIError
 from flask import Response, request, send_from_directory, send_file,  url_for, g
 import json
 import logging
@@ -39,19 +39,27 @@ def index():
 
 @app.errorhandler(Exception)
 def error_handler(err):
+    logging.debug('-----------------')
     logging.error(str(err))
     logging.error(format_message('Unhandled exception: ' + str(err)))
     call_stack = traceback.format_exc()
 
     lines = call_stack.split("\n")
-    for line in lines:
+    for line in lines[0:-2]:
         logging.error(format_message(line))
 
     error = {
         "type": "F",
-        "message": str(err),
-        "stack": call_stack
+        "stack": lines[0:-2]
     }
+
+    try:
+        error["dict"] = json.loads(str(err))
+    except ValueError as e:
+        error["text"] = str(err)
+
+    logging.error(json.dumps(error, indent=2))
+
     raise_error(error)
     return Response(json.dumps(error), status=500)
 
@@ -666,7 +674,10 @@ def post_search():
     date_response = requests.get(date_uri, headers=get_headers())
 
     if date_response.status_code != 200:
-        raise RuntimeError("Unexpected return from legacy_adapter/dates: " + str(date_response.status_code))
+        raise CaseworkAPIError(json.dumps({
+            "message": "Unexpected response from legacy_adapter/dates: " + str(date_response.status_code),
+            "response": date_response.text
+        }))
 
     # call legacy_adapter to retrieve the next search number
     url = app.config['LEGACY_ADAPTER_URI'] + '/search_number'
@@ -674,11 +685,12 @@ def post_search():
     if response.status_code == 200:
         cert_no = response.text
     else:
-        err = 'Failed to call search_number. Error code:' \
-              + str(response.status_code)
-
+        err = 'Failed to call search_number. Error code: {}'.format(str(response.status_code))
         logging.error(format_message(err))
-        raise RuntimeError(err)
+        raise CaseworkAPIError(json.dumps({
+            "message": err,
+            "response": response.text
+        }))
 
     date_info = date_response.json()
     data['expiry_date'] = date_info['search_expires']
@@ -1122,11 +1134,15 @@ def build_fee_data(data, appn, fee_details, action):
             result = (json.loads(response.text))
             fee['class_of_charge'] = result['class_of_charge']
         else:
-            err = 'Failed to get registration for ' + number + ' dated ' + date + '. Error code:' \
-                  + str(response.status_code)
-
+            err = "Failed to get registration {} of {}. Code: {}".format(
+                number, date, response.status_code
+            )
             logging.error(format_message(err))
-            raise RuntimeError(err)
+            raise CaseworkAPIError(json.dumps({
+                "message": err,
+                "response": response.text
+            }))
+
     elif action == 'search':
         if fee_details['delivery'] == 'Postal':
             transaction_code = 'PS'
@@ -1148,18 +1164,25 @@ def build_fee_data(data, appn, fee_details, action):
         url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
         response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
         if response.status_code == 200:
-            fee = response.text
+            fee = response.text  # TODO: ???
             return response.status_code
         else:
-            err = 'Failed to call fee_process for ' + data['cert_no'] + '. Error code:' \
-                  + str(response.status_code)
+            err = "Failed to call fee_process for {}. Code: {}".format(
+                data["cert_no"], response.status_code
+            )
 
             logging.error(format_message(err))
-            raise RuntimeError(err)
+            raise CaseworkAPIError(json.dumps({
+                "message": err,
+                "response": response.text
+            }))
+
     else:
-        err = 'The fee action is incorrect: ' + action
+        err = "The fee action is incorrect: {}".format(action)
         logging.error(format_message(err))
-        raise RuntimeError(err)
+        raise CaseworkAPIError(json.dumps({
+            "message": err
+        }))
 
         # call legacy_adapter for each registration number
     if 'priority_notices' in appn:
@@ -1179,11 +1202,14 @@ def build_fee_data(data, appn, fee_details, action):
         url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
         response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
         if response.status_code != 200:
-            err = 'Failed to call fee_process for ' + str(fee_data['appn_no']) + '. Error code:' \
-                  + str(response.status_code)
+            err = "Failed to call fee_process for {}. Code: {}".format(
+                fee_data['appn_no'], response.status_code
+            )
 
             logging.error(format_message(err))
-            raise RuntimeError(err)
+            raise CaseworkAPIError(json.dumps({
+                "message": err
+            }))
 
     return
 

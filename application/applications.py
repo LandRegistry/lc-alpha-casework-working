@@ -1,6 +1,6 @@
 import json
 from application import app
-from application.error import ValidationError
+from application.error import ValidationError, CaseworkAPIError
 from application.documents import get_document, get_image
 import requests
 import logging
@@ -348,7 +348,7 @@ def create_lc_registration(data):
             'number': name_data['complex']['number']
         }
     else:
-        raise RuntimeError("Unexpected name type: {}".format(name['type']))
+        raise CaseworkAPIError("Unexpected name type: {}".format(name['type']))
 
     party['names'].append(name)
     party['occupation'] = data['lc_register_details']['occupation']
@@ -373,7 +373,7 @@ def create_lc_registration(data):
         date_response = requests.get(date_uri, headers=get_headers())
 
         if date_response.status_code != 200:
-            raise RuntimeError("Unexpected return from legacy_adapter/dates: " + str(date_response.status_code))
+            raise CaseworkAPIError(json.dumps(date_response.text))
 
         date_info = date_response.json()
         registration['priority_notice'] = {'expires': date_info['priority_notice_expires']}
@@ -407,7 +407,9 @@ def complete_application(cursor, appn_id, data):
 
     elif response.status_code != 200:
         logging.error(response.text)
-        raise RuntimeError("Unexpected response from /registrations: {}".format(response.status_code))
+        error = json.loads(response.text)
+        logging.error(json.dumps(error, indent=2))
+        raise CaseworkAPIError(json.dumps(error))
 
     regns = response.json()
 
@@ -475,7 +477,8 @@ def cancel_application(cursor, appn_id, data):
     response = requests.post(url, data=json.dumps(data), headers=headers)
     if response.status_code != 200:
         logging.error(response.text)
-        raise RuntimeError("Unexpected response from /cancellations: {}".format(response.status_code))
+        raise CaseworkAPIError(json.dumps(response.text))
+
     regns = response.json()
     # Insert print job
     insert_result_row(cursor, regns['request_id'], 'registration')
@@ -499,7 +502,8 @@ def renew_application(cursor, appn_id, data):
     response = requests.post(url, data=json.dumps(data), headers=headers)
     if response.status_code != 200:
         logging.error(response.text)
-        raise RuntimeError("Unexpected response from /renewals: {}".format(response.status_code))
+        raise CaseworkAPIError(json.dumps(response.text))
+
     regns = response.json()
     # Insert print job
     insert_result_row(cursor, regns['request_id'], 'registration')
@@ -610,7 +614,7 @@ def get_party_name(data):
                 'name': data['estate_owner']['complex']['name'],
                 'number': data['estate_owner']['complex']['number']}
         else:
-            raise RuntimeError("Unexpected name type: {}".format(name['type']))
+            raise CaseworkAPIError("Unexpected name type: {}".format(name['type']))
 
         party['names'].append(name)
         party['occupation'] = data['occupation']
