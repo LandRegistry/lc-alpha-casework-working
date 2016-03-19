@@ -12,6 +12,15 @@ class ValidationError(Exception):
         return repr(self.value)
 
 
+class CaseworkAPIError(Exception):
+    def __init__(self, value):
+        self.value = value
+        super(CaseworkAPIError, self).__init__(value)
+
+    def __str__(self):
+        return self.value
+
+
 def raise_error(error):
     hostname = "amqp://{}:{}@{}:{}".format(app.config['MQ_USERNAME'], app.config['MQ_PASSWORD'],
                                            app.config['MQ_HOSTNAME'], app.config['MQ_PORT'])
