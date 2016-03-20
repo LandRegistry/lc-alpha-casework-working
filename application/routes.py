@@ -1114,7 +1114,7 @@ def reclassify_form():
     appn_id = data['appn_id']
     form_type = data['form_type']
     logging.info("T:%s Reclassify as a %s Application ", str(appn_id), str(form_type))
-    logging.audit(format_message("Reclassify %s as %s", str(appn_id), str(form_type)))
+    logging.audit(format_message("Reclassify %s as %s"), str(appn_id), str(form_type))
     work_type = get_work_type(form_type)
     logging.info("move to ", work_type["list_title"])
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
