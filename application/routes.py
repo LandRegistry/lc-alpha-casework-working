@@ -211,7 +211,10 @@ def get_application(appn_id):
 def remove_application(appn_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        logging.audit("Remove application")
+        if 'reject' in request.args:
+            logging.audit(format_message("Reject application"))
+        else:
+            logging.audit(format_message("Remove application"))
         rows = delete_application(cursor, appn_id)
     finally:
         complete(cursor)
