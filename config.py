@@ -21,3 +21,4 @@ class Config(object):
     #LEGACY_ADAPTER_URI = os.getenv('LEGACY_ADAPTER_URL', 'http://10.0.2.2:15007')   # Development IDE
     RESULT_GENERATE_URI = os.getenv('RESULTS_GENERATE_URL', 'http://10.0.2.2:5016')
     # IMAGE_DIRECTORY = '/home/vagrant/interim/'
+    AUDIT_LOG_FILENAME = os.getenv("AUDIT_LOG_FILENAME", "/vagrant/logs/casework-api/audit.log")

@@ -163,6 +163,7 @@ def create_application():
 @app.route('/applications/<appn_id>/lock', methods=['POST'])
 def lock_application(appn_id):
     logging.info(format_message("Lock application"))
+    logging.audit(format_message("Lock application"))
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         locked = set_lock_ind(cursor, appn_id)
@@ -178,6 +179,7 @@ def lock_application(appn_id):
 @app.route('/applications/<appn_id>/lock', methods=['DELETE'])
 def unlock_application(appn_id):
     logging.info(format_message("Unlock application"))
+    logging.audit(format_message("Unlock application"))
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         clear_lock_ind(cursor, appn_id)
@@ -197,6 +199,7 @@ def get_application(appn_id):
     #     return Response(status=404)
     # else:
     try:
+        logging.audit("Retrieve application")
         appn = get_application_by_id(cursor, appn_id)
     finally:
         complete(cursor)
@@ -208,6 +211,7 @@ def get_application(appn_id):
 def remove_application(appn_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
+        logging.audit("Remove application")
         rows = delete_application(cursor, appn_id)
     finally:
         complete(cursor)
@@ -239,24 +243,30 @@ def update_application(appn_id):
     try:
         if action == 'store':
             logging.info(format_message("Store application"))
-            logging.debug(data)
+            logging.store(format_message("Store application"))
+            # logging.debug(data)
             # update_application_details(cursor, appn_id, data)
             store_application(cursor, appn_id, data)
             appn = get_application_by_id(cursor, appn_id)
         elif action == 'complete':
             logging.info(format_message("Complete registration"))
+            logging.audit(format_message("Complete application"))
             appn = complete_application(cursor, appn_id, data)
         elif action == 'amend' or action == 'rectify':
             logging.info(format_message("Complete update"))
+            logging.audit(format_message("Complete update application"))
             appn = amend_application(cursor, appn_id, data)
         elif action == 'cancel':
             logging.info(format_message("Complete cancellation"))
+            logging.audit(format_message("Complete cancellation application"))
             appn = cancel_application(cursor, appn_id, data)
         elif action == 'renewal':
             logging.info(format_message("Complete renewal"))
+            logging.audit(format_message("Complete renewal application"))
             appn = renew_application(cursor, appn_id, data)
         elif action == 'correction':
             logging.info(format_message("Complete correction"))
+            logging.audit(format_message("Complete correction"))
             appn = correct_application(cursor, data)
         else:
             return Response("Invalid action", status=400)
@@ -574,6 +584,7 @@ def delete_all_search_forms(request_id):
 
 @app.route('/keyholders/<key_number>', methods=['GET'])
 def get_keyholder(key_number):
+    logging.audit(format_message("Get keyholder details"))
     uri = app.config['LEGACY_ADAPTER_URI'] + '/keyholders/' + key_number
     response = requests.get(uri, headers=get_headers())
     return Response(response.text, status=response.status_code, mimetype='application/json')
@@ -667,6 +678,7 @@ def post_search():
     data = request.get_json(force=True)
 
     logging.debug(json.dumps(data))
+    logging.audit("Submit search")
 
     today = datetime.now().strftime('%Y-%m-%d')
     date_uri = app.config['LEGACY_ADAPTER_URI'] + '/dates/' + today
@@ -727,6 +739,7 @@ def post_search():
 
 @app.route('/office_copy', methods=['GET'])
 def get_office_copy():
+    logging.audit("Retrieve office copy")
     class_of_charge = request.args['class']
     reg_no = request.args['reg_no']
     date = request.args['date']
@@ -745,6 +758,7 @@ def associate_image():
     data = request.get_json(force=True)
     logging.debug(json.dumps(data))
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    logging.audit(format_message("Link image to registration %s of %s"), data['reg_no'], data['date'])
     try:
         cursor.execute("UPDATE registered_documents SET doc_id = %(doc_id)s " +
                        "WHERE number=%(reg)s and date=%(date)s",
@@ -1024,6 +1038,7 @@ def insert_result(request_id, result_type):
 @app.route('/b2b_forms', methods=['POST'])
 def insert_b2b_form():
     data = request.get_json()
+    logging.audit(format_message("Pre-generate B2B office copy for %s"), json.dumps(data['new_registrations']))
 
     logging.info(data)
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
@@ -1038,6 +1053,7 @@ def insert_b2b_form():
 
 @app.route('/reprints/<reprint_type>', methods=['GET'])
 def reprints(reprint_type):
+
     request_id = ''
     if reprint_type == 'registration':
         registration_no = request.args['registration_no']
@@ -1053,6 +1069,8 @@ def reprints(reprint_type):
         request_id = request.args['request_id']
     if request_id == '':
         return Response("Error: could not determine request id", status=400)
+
+    logging.audit(format_message("Request reprint for %s"), request_id)
     # for the time being call reprint on result-generate. this probably needs moving into casework-api
     url = app.config['RESULT_GENERATE_URI'] + '/reprints?request=' + str(request_id)
     response = requests.get(url, headers=get_headers())
@@ -1062,6 +1080,7 @@ def reprints(reprint_type):
 
 @app.route('/reprints/search', methods=['POST'])
 def get_searches():
+    logging.audit(format_message("Search reprints"))
     search_data = request.data
     response = requests.post(app.config['LAND_CHARGES_URI'] + '/request_search_details', data=search_data,
                              headers=get_headers({'Content-Type': 'application/json'}))
@@ -1075,6 +1094,8 @@ def get_registration(reg_date, reg_name):
         class_of_charge = request.args["class_of_charge"]
     else:
         class_of_charge = None
+
+    logging.audit(format_message("Retrieve registration details for %s / %s"), reg_date, reg_name)
     response = get_registration_details(reg_date, reg_name, class_of_charge)
     logging.debug(response['data'])
 
@@ -1090,6 +1111,7 @@ def reclassify_form():
     appn_id = data['appn_id']
     form_type = data['form_type']
     logging.info("T:%s Reclassify as a %s Application ", str(appn_id), str(form_type))
+    logging.audit(format_message("Reclassify %s as %s", str(appn_id), str(form_type)))
     work_type = get_work_type(form_type)
     logging.info("move to ", work_type["list_title"])
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
@@ -1234,6 +1256,7 @@ def save_request_fee(id, fee):
 
 @app.route('/multi_reg_check/<reg_date>/<reg_no>', methods=['GET'])
 def get_multi_reg_check(reg_date, reg_no):
+    logging.audit(format_message("Check multiple registration for %s %s"), reg_no, reg_date)
     url = app.config['LAND_CHARGES_URI'] + '/multi_reg_check/' + reg_date + "/" + reg_no
     data = requests.get(url, headers=get_headers())
     return Response(data, status=200, mimetype='application/json')
