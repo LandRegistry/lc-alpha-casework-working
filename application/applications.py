@@ -252,7 +252,10 @@ def amend_application(cursor, appn_id, data):
     headers = get_headers({'Content-Type': 'application/json'})
     response = requests.put(url, data=json.dumps(reg_data), headers=headers)
     if response.status_code != 200:
-        return response
+        logging.error(response.text)
+        error = json.loads(response.text)
+        logging.error(json.dumps(error, indent=2))
+        raise CaseworkAPIError(json.dumps(error))
 
     regns = response.json()
 
