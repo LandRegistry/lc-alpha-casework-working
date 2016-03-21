@@ -1119,7 +1119,7 @@ def reclassify_form():
     logging.info("T:%s Reclassify as a %s Application ", str(appn_id), str(form_type))
     logging.audit(format_message("Reclassify %s as %s"), str(appn_id), str(form_type))
     work_type = get_work_type(form_type)
-    logging.info("move to ", work_type["list_title"])
+    logging.info("move to %s", work_type["list_title"])
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         unlock_application(appn_id)
