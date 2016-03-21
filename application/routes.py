@@ -1246,6 +1246,8 @@ def build_fee_data(data, appn, fee_details, action):
 
 
 def save_request_fee(id, fee):
+    assert (fee is not None and fee != ''), "Fee is missing"
+
     # Add transaction fee to the associated request
     url = app.config['LAND_CHARGES_URI'] + '/request/' + id + "/" + fee
     response = requests.put(url, headers=get_headers())
