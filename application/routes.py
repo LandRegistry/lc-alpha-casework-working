@@ -713,6 +713,9 @@ def post_search():
 
     uri = app.config['LAND_CHARGES_URI'] + '/searches'
     response = requests.post(uri, data=json.dumps(data), headers=get_headers({'Content-Type': 'application/json'}))
+    if response.status_code != 200:
+        raise CaseworkAPIError(json.dumps(response.text))
+
     logging.info('POST {} -- {}'.format(uri, response.text))
 
     # store result
