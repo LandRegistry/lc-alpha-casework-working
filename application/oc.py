@@ -111,7 +111,8 @@ def create_ins_image(data, filename, config, registration_no):
         cursor_pos += 25
         draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, fs_text, cl_black)
     del draw
-    directory = config['TEMP_DIRECTORY']
+
+    directory = config['TEMP_DIR']
     TiffImagePlugin.WRITE_LIBTIFF = True
     file_path = os.path.join(directory, filename)
     im.save(file_path, compression="tiff_deflate", resolution=120.0)
@@ -120,7 +121,7 @@ def create_ins_image(data, filename, config, registration_no):
 
 
 def compress_image(filename, config):
-    directory = config['TEMP_DIRECTORY']
+    directory = config['TEMP_DIR']
     alt_filename = 'tmp_' + filename
     subprocess.call(['tiff2bw', os.path.join(directory, filename), os.path.join(directory, alt_filename)])
     subprocess.call(['tiffdither', os.path.join(directory, alt_filename), os.path.join(directory, filename)])
@@ -137,7 +138,7 @@ def create_document(cursor, data, config):
     create_ins_image(ins_data, filename, config, str(data['new_registrations'][0]['number']))
     compress_image(filename, config)
 
-    image_file = open(os.path.join(config['TEMP_DIRECTORY'], filename), 'rb')
+    image_file = open(os.path.join(config['TEMP_DIR'], filename), 'rb')
     image_bytes = image_file.read()
     image_file.close()
 

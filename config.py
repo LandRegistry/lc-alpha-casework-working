@@ -15,7 +15,8 @@ class Config(object):
     MQ_HOSTNAME = os.getenv("MQ_HOST", "localhost")
     MQ_PORT = os.getenv("MQ_PORT", "5672")
     ERROR_QUEUE_NAME = os.getenv('ERROR_QUEUE_NAME', "errors")
-    TEMP_DIRECTORY = os.getenv('TEMP_DIRECTORY', '/vagrant')
+    TEMP_DIRECTORY = os.getenv('TEMP_DIRECTORY', '/tmp')
+    TEMP_DIR = os.getenv('TMPDIR', '/tmp')
     LAND_CHARGES_URI = os.getenv('LAND_CHARGES_URL', 'http://localhost:5004')
     LEGACY_ADAPTER_URI = os.getenv('LEGACY_ADAPTER_URL', 'http://localhost:5007')  # VM
     #LEGACY_ADAPTER_URI = os.getenv('LEGACY_ADAPTER_URL', 'http://10.0.2.2:15007')   # Development IDE
