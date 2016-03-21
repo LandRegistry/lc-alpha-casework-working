@@ -246,7 +246,7 @@ def update_application(appn_id):
     try:
         if action == 'store':
             logging.info(format_message("Store application"))
-            logging.store(format_message("Store application"))
+            logging.audit(format_message("Store application"))
             # logging.debug(data)
             # update_application_details(cursor, appn_id, data)
             store_application(cursor, appn_id, data)
