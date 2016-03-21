@@ -283,7 +283,8 @@ def correct_application(cursor, data):
     headers = get_headers({'Content-Type': 'application/json'})
     response = requests.put(url, data=json.dumps(reg_data), headers=headers)
     if response.status_code != 200:
-        return response
+        logging.error(response.text)
+        raise ValidationError(response.text)
 
     regns = response.json()
 
