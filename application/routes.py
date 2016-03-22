@@ -537,7 +537,7 @@ def get_registered_forms(date, reg_no):
 def get_all_registered_forms():
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        cursor.execute('select doc_id from registered_documents ')
+        cursor.execute('select number, date, doc_id from registered_documents ')
         rows = cursor.fetchall()
         if len(rows) == 0:
             return Response(status=404)
@@ -545,7 +545,9 @@ def get_all_registered_forms():
         result = []
         for row in rows:
             result.append({
-                'document_id': row['doc_id']
+                'document_id': row['doc_id'],
+                'number': row['number'],
+                'date': row['date']
             })
         return Response(json.dumps(result), status=200, mimetype='application/json')
     finally:
