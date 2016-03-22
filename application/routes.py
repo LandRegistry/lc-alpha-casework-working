@@ -534,7 +534,7 @@ def get_registered_forms(date, reg_no):
 
 
 @app.route('/registered_forms', methods=['GET'])
-def get_all_registered_forms(date, reg_no):
+def get_all_registered_forms():
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         cursor.execute('select doc_id from registered_documents ')
