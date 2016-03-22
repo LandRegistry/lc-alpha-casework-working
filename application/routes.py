@@ -533,6 +533,27 @@ def get_registered_forms(date, reg_no):
         complete(cursor)
 
 
+@app.route('/registered_forms', methods=['GET'])
+def get_all_registered_forms():
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cursor.execute('select number, date, doc_id from registered_documents ')
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            return Response(status=404)
+
+        result = []
+        for row in rows:
+            result.append({
+                'document_id': row['doc_id'],
+                'number': row['number'],
+                'date': row['date'].strftime('%Y-%m-%d')
+            })
+        return Response(json.dumps(result), status=200, mimetype='application/json')
+    finally:
+        complete(cursor)
+
+
 @app.route('/registered_search_forms/<request_id>', methods=['GET'])
 def get_registered_search_forms(request_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
