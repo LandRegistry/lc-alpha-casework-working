@@ -547,7 +547,7 @@ def get_all_registered_forms():
             result.append({
                 'document_id': row['doc_id'],
                 'number': row['number'],
-                'date': row['date']
+                'date': row['date'].strftime('%Y-%m-%d')
             })
         return Response(json.dumps(result), status=200, mimetype='application/json')
     finally:
