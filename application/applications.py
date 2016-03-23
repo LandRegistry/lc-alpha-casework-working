@@ -630,8 +630,8 @@ def get_party_name(data):
 
 def get_additional_info(response):
     info = ''
-    if 'additional_information' in response:
-        info = response['additional_information']
+    if 'entered_addl_info' in response:
+        info = response['entered_addl_info']
 
     return info
 
