@@ -586,7 +586,7 @@ def delete_all_reg_forms(date, reg_no):
         if len(rows) != 1:
             raise CaseworkAPIError("Could not retrieve unique document id")
 
-        document_id = rows[0]['document_id']
+        document_id = rows[0]['doc_id']
         cursor.execute('delete from registered_documents '
                        'where number=%(no)s and date=%(date)s', {
                            'no': reg_no, 'date': date
@@ -614,7 +614,7 @@ def delete_all_search_forms(request_id):
         if len(rows) != 1:
             raise CaseworkAPIError("Could not retrieve unique document id")
 
-        document_id = rows[0]['document_id']
+        document_id = rows[0]['doc_id']
         cursor.execute('delete from registered_documents '
                        'where request_id=%(id)s', {
                            'id': request_id
