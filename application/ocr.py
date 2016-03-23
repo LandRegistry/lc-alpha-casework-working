@@ -87,7 +87,7 @@ image_data = [
     {
         'bounds': [0.728365384615385, 0, 0.153846153846154, 0.0250998288648032],
         'options': [
-            {'pattern': 'LRRABO', 'result': 'WO(B) Amend'}
+            {'pattern': 'LRRABO', 'result': 'LRRABO'}
         ]
     },
     {
