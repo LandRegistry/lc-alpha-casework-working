@@ -274,9 +274,12 @@ def update_application(appn_id):
         else:
             return Response("Invalid action", status=400)
         # sort out the fee
+        # everything but searches
         if fee_ind is True:
-            if fee_details['type'] == 'dd':
-                logging.debug("Direct debit fee selected" + json.dumps(fee_details))
+            logging.debug("fee selected" + json.dumps(fee_details))
+            if fee_details['type'] == 'wf' or  fee_details['type'] == 'nf':
+                save_request_fee(str(appn['request_id']), str(0))
+            else:
                 # build the fee details to pass to legacy_adapter
                 build_fee_data(data, appn, fee_details, action)
         complete(cursor)
@@ -780,7 +783,10 @@ def post_search():
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         # process fee info
-        if data['fee_details']['type'] == 'dd':
+        if data['fee_details']['type'] == 'wf' or  data['fee_details']['type'] == 'nf':
+            save_request_fee(str(response_data[0]), str(0))
+        else:
+            # build the fee details to pass to legacy_adapter
             build_fee_data(data, response_data, data['fee_details'], 'search')
         store_image_for_later(cursor, data['document_id'], None, None, response_data[0])
         complete(cursor)
@@ -1197,7 +1203,7 @@ def build_fee_data(data, appn, fee_details, action):
                'key_number': data['applicant']['key_number'],
                'reference': data['applicant']['reference'],
                'class_of_charge': data['class_of_charge']}
-        reg_type = 'new registrations'
+        reg_type = 'new_registrations'
     elif action == 'renewal':
         fee = {'transaction_code': 'RN',
                'key_number': data['applicant']['key_number'],
@@ -1235,7 +1241,8 @@ def build_fee_data(data, appn, fee_details, action):
         fee = {'transaction_code': transaction_code,
                'key_number': data['customer']['key_number'],
                'reference': data['customer']['reference'],
-               'class_of_charge': ' '}
+               'class_of_charge': ' ',
+               'method_of_payment': fee_details['type']}
 
         fee_data = {'fee_info': fee,
                     'reg_no': ' ',
@@ -1272,31 +1279,33 @@ def build_fee_data(data, appn, fee_details, action):
     if 'priority_notices' in appn:
         reg_type = 'priority_notices'
 
-    for reg in appn[reg_type]:
-        fee_data = {'fee_info': fee}
-        if action == 'cancel':
-            fee_data['reg_no'] = number
-            fee_data['appn_no'] = str(reg['number'])
-        else:
-            fee_data['reg_no'] = str(reg['number'])
-            fee_data['appn_no'] = str(reg['number'])
-        fee_data['fee_factor'] = fee_details['fee_factor']
+    fee['method_of_payment'] = fee_details['type']
 
-        logging.debug("fee information" + json.dumps(fee_data))
-        url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
-        response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
-        if response.status_code != 200:
-            err = "Failed to call fee_process for {}. Code: {}".format(
-                fee_data['appn_no'], response.status_code
-            )
+    fee_data = {'fee_info': fee}
 
-            logging.error(format_message(err))
-            raise CaseworkAPIError(json.dumps({
-                "message": err
-            }))
-        else:
-            fee = response.text
-            save_request_fee(str(appn['request_id']), fee)
+    print(appn[reg_type])
+    if action == 'cancel':
+        fee_data['reg_no'] = number
+        fee_data['appn_no'] = str(appn[reg_type][0]['number'])
+    else:
+        fee_data['reg_no'] = str(appn[reg_type][0]['number'])
+        fee_data['appn_no'] = str(appn[reg_type][0]['number'])
+    fee_data['fee_factor'] = fee_details['fee_factor']
+    logging.debug("fee information " + json.dumps(fee_data))
+    url = app.config['LEGACY_ADAPTER_URI'] + '/fee_process'
+    response = requests.post(url, data=json.dumps(fee_data), headers=get_headers())
+    if response.status_code != 200:
+        err = "Failed to call fee_process for {}. Code: {}".format(
+            fee_data['appn_no'], response.status_code
+        )
+
+        logging.error(format_message(err))
+        raise CaseworkAPIError(json.dumps({
+            "message": err
+        }))
+    else:
+        fee = response.text
+        save_request_fee(str(appn['request_id']), fee)
 
     return
 
