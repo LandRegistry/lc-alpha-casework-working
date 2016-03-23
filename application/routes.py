@@ -633,6 +633,14 @@ def delete_all_search_forms(request_id):
 # =========== OTHER ROUTES ==============
 
 
+# Route to allow the front-end to use LC data to validate county councils.
+@app.route("/county_council/<county_name>", methods=["GET"])
+def validate_county_council(county_name):
+    url = app.config['LAND_CHARGES_URI'] + '/county_council/' + county_name
+    data = requests.get(url, headers=get_headers())
+    return Response(data, status=data.status_code, mimetype='application/json')
+
+
 @app.route('/keyholders/<key_number>', methods=['GET'])
 def get_keyholder(key_number):
     logging.audit(format_message("Get keyholder details"))
