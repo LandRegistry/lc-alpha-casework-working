@@ -1,6 +1,6 @@
 import json
 from application import app
-from application.error import ValidationError, CaseworkAPIError
+from application.error import ValidationError, CaseworkAPIError, raise_error
 from application.documents import get_document, get_image
 import requests
 import logging
@@ -419,27 +419,45 @@ def complete_application(cursor, appn_id, data):
     regns = response.json()
 
     # Insert print job
-    insert_result_row(cursor, regns['request_id'], 'registration')
-    # TODO error handling on inserting print job row
+    errors = []
+    try:
+        insert_result_row(cursor, regns['request_id'], 'registration')
+    except Exception as e:
+        error = "Failed to insert print row. Message: {}".format(str(e))
+        errors.append(error)
+        logging.error(error)
 
     # Archive document
     document_id = data['application_data']['document_id']
-    # pages = get_document(cursor, document_id)
-
     if data['form'] == 'K6':
         reg_type = 'priority_notices'
     else:
         reg_type = 'new_registrations'
 
-    for regn in regns[reg_type]:
-        number = regn['number']
-        date = regn['date']
-        store_image_for_later(cursor, document_id, number, date)
+    try:
+        for regn in regns[reg_type]:
+            number = regn['number']
+            date = regn['date']
+            store_image_for_later(cursor, document_id, number, date)
+    except Exception as e:
+        error = "Failed to insert image for later. Message: {}".format(str(e))
+        errors.append(error)
+        logging.error(error)
+
 
     # Delete work-item
-    delete_application(cursor, appn_id)
+    try:
+        delete_application(cursor, appn_id)
+    except Exception as e:
+        error = "Failed to delete application row. Message: {}".format(str(e))
+        errors.append(error)
+        logging.error(error)
 
     # return regn nos
+
+    for error in errors:
+        raise_error(error)
+
     return regns
 
 
