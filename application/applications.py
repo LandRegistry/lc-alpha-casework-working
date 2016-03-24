@@ -463,8 +463,8 @@ def bulk_insert_applications(cursor, data):  # pragma: no cover
 # insert a print job row on the result table
 def insert_result_row(cursor, request_id, result_type):
     try:
-        cursor.execute("INSERT into results(request_id, res_type, print_status) values(%(request_id)s, %(res_type)s, "
-                       " %(print_status)s) ",
+        cursor.execute("INSERT into results(request_id, res_type, print_status, insert_timestamp) "
+                       "values(%(request_id)s, %(res_type)s, %(print_status)s, current_timestamp) ",
                        {
                            'request_id': request_id,
                            'res_type': result_type,
