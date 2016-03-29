@@ -338,7 +338,7 @@ def create_lc_registration(data):
             'forenames': name_data['private']['forenames'],
             'surname': name_data['private']['surname']
         }
-    elif name['type'] == "County Council" or name['type'] == "Parish Council" or name['type'] == "Other Council":
+    elif name['type'] == "County Council" or name['type'] == "Parish Council" or name['type'] == "Rural Council" or name['type'] == "Other Council":
         name['local'] = {
             'name': name_data['local']['name'],
             'area': name_data['local']['area']
