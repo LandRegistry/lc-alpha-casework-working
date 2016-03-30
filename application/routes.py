@@ -581,26 +581,26 @@ def get_registered_search_forms(request_id):
 def delete_all_reg_forms(date, reg_no):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        cursor.execute('select doc_id from registered_documents '
-                       'where number=%(no)s and date=%(date)s', {
-                           'no': reg_no, 'date': date
-                       })
-        rows = cursor.fetchall()
-        if len(rows) != 1:
-            raise CaseworkAPIError("Could not retrieve unique document id")
-
-        document_id = rows[0]['doc_id']
+        # cursor.execute('select doc_id from registered_documents '
+        #                'where number=%(no)s and date=%(date)s', {
+        #                    'no': reg_no, 'date': date
+        #                })
+        # rows = cursor.fetchall()
+        # if len(rows) != 1:
+        #     raise CaseworkAPIError("Could not retrieve unique document id")
+        #
+        # document_id = rows[0]['doc_id']
         cursor.execute('delete from registered_documents '
                        'where number=%(no)s and date=%(date)s', {
                            'no': reg_no, 'date': date
                        })
 
-        cursor.execute('delete from documents where document_id = %(id)s', {
-            'id': document_id
-        })
+        # cursor.execute('delete from documents where document_id = %(id)s', {
+        #     'id': document_id
+        # })
         return Response(status=200)
 
-    # TODO: also remove form from documents table? <<- TEST! IMPORTANT!
+    # TODO: also remove form from documents table? <<- TEST! IMPORTANT! THIS WAS A BAD PLAN
     finally:
         complete(cursor)
 
@@ -609,26 +609,26 @@ def delete_all_reg_forms(date, reg_no):
 def delete_all_search_forms(request_id):
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        cursor.execute('select doc_id from registered_documents '
-                       'where request_id=%(id)s', {
-                           'id': request_id
-                       })
-        rows = cursor.fetchall()
-        if len(rows) != 1:
-            raise CaseworkAPIError("Could not retrieve unique document id")
+        # cursor.execute('select doc_id from registered_documents '
+        #                'where request_id=%(id)s', {
+        #                    'id': request_id
+        #                })
+        # rows = cursor.fetchall()
+        # if len(rows) != 1:
+        #     raise CaseworkAPIError("Could not retrieve unique document id")
 
-        document_id = rows[0]['doc_id']
+        # document_id = rows[0]['doc_id']
         cursor.execute('delete from registered_documents '
                        'where request_id=%(id)s', {
                            'id': request_id
                        })
 
-        cursor.execute('delete from documents where document_id = %(id)s', {
-            'id': document_id
-        })
+        # cursor.execute('delete from documents where document_id = %(id)s', {
+        #     'id': document_id
+        # })
         return Response(status=200)
 
-    # TODO: also remove form from documents table? <<- TEST! IMPORTANT!
+    # TODO: also remove form from documents table? <<- TEST! IMPORTANT! THIS WAS A BAD PLAN
     finally:
         complete(cursor)
 

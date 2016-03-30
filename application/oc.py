@@ -103,13 +103,33 @@ def create_ins_image(data, filename, config, registration_no):
             cursor_pos += 25
             draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
     cursor_pos += 30
+    
     if 'business_address' in data:
-        cursor_pos += 25
-        draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, fs_text, cl_black)
+        for address in data['business_address']:
+            cursor_pos += 40
+            for address_line in address['address_lines']:
+                draw_text(draw, (data_pos, cursor_pos), address_line, arial, fs_text, cl_black)
+                cursor_pos += 25
+            draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, cl_black)
+            cursor_pos += 25
+            draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
+
+
+        # cursor_pos += 25
+        # draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, fs_text, cl_black)
     cursor_pos += 30
     if 'investment_property' in data:
-        cursor_pos += 25
-        draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, fs_text, cl_black)
+        for address in data['investment_property']:
+            cursor_pos += 40
+            for address_line in address['address_lines']:
+                draw_text(draw, (data_pos, cursor_pos), address_line, arial, fs_text, cl_black)
+                cursor_pos += 25
+            draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, cl_black)
+            cursor_pos += 25
+            draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
+
+        # cursor_pos += 25
+        # draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, fs_text, cl_black)
     del draw
 
     directory = config['TEMP_DIR']
