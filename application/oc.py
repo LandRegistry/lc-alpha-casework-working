@@ -103,7 +103,7 @@ def create_ins_image(data, filename, config, registration_no):
             cursor_pos += 25
             draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
     cursor_pos += 30
-    
+
     if 'business_address' in data:
         for address in data['business_address']:
             cursor_pos += 40

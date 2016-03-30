@@ -923,48 +923,6 @@ def bulk_add_applications():  # pragma: no cover
     return Response(json.dumps({'ids': ids}), status=200, mimetype='application/json')
 
 
-@app.route('/counties', methods=['POST'])
-def load_counties():  # pragma: no cover
-    if not app.config['ALLOW_DEV_ROUTES']:
-        return Response(status=403)
-
-    if request.headers['Content-Type'] != "application/json":
-        logging.error('Content-Type is not JSON')
-        return Response(status=415)
-
-    json_data = request.get_json(force=True)
-    cursor = connect()
-    try:
-        for item in json_data:
-            if 'cym' not in item:
-                item['cym'] = None
-
-            cursor.execute('INSERT INTO COUNTIES (name, welsh_name) VALUES (%(e)s, %(c)s)',
-                           {
-                               'e': item['eng'], 'c': item['cym']
-                           })
-        complete(cursor)
-    except:
-        rollback(cursor)
-        raise
-    return Response(status=200)
-
-
-@app.route('/counties', methods=['DELETE'])
-def delete_counties():  # pragma: no cover
-    if not app.config['ALLOW_DEV_ROUTES']:
-        return Response(status=403)
-
-    cursor = connect()
-    try:
-        cursor.execute('DELETE FROM COUNTIES')
-        complete(cursor)
-    except:
-        rollback(cursor)
-        raise
-    return Response(status=200)
-
-
 def connect(cursor_factory=None):
     connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
         app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
