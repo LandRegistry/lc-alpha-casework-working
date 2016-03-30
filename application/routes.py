@@ -396,7 +396,7 @@ def change_image(doc_id, page_no, size):
             # ocr form to detect application type
             bytes = io.BytesIO(request.data)
             form_type = recognise(bytes)
-            # TODO: if form_type is different to the original type, need to consider updating any page 2,3 etc...
+            # TODO: if form_type is different to the original type, need to consider updating any page 2,3 etc... TEST reallocate on multi-page form
         else:
             cursor.execute('select form_type from documents where document_id=%(doc_id)s and page = 1',
                            {"doc_id": doc_id})
@@ -699,9 +699,13 @@ def insert_complex_name(name, number):
             "date": today,
             "number": number,
             "source": " ",
-            "uid": " ",  # TODO: what is this going to be?
+            "uid": " ",  # TODO: ensure this is being passed in
             "name": name
             }
+
+    if 'X-LC-Username' in request.headers:
+        data['uid'] = request.headers['X-LC-Username']
+
     uri = app.config['LEGACY_ADAPTER_URI'] + '/complex_names'
     response = requests.post(uri, data=json.dumps(data), headers=get_headers({'Content-Type': 'application/json'}))
     logging.info('POST {} -- {}'.format(uri, response))
@@ -783,7 +787,7 @@ def post_search():
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
         # process fee info
-        if data['fee_details']['type'] == 'wf' or  data['fee_details']['type'] == 'nf':
+        if data['fee_details']['type'] == 'wf' or data['fee_details']['type'] == 'nf':
             save_request_fee(str(response_data[0]), str(0))
         else:
             # build the fee details to pass to legacy_adapter
@@ -1033,7 +1037,8 @@ def set_result_status(result_id):
 
     try:
         if 'print_status' in json_data:
-            cursor.execute('UPDATE results set print_status = %(result_status)s WHERE id = %(result_id)s',
+            cursor.execute("UPDATE results set print_status = %(result_status)s, status_timestamp = current_timestamp "
+                           " WHERE id = %(result_id)s",
                            {
                                "result_status": json_data['print_status'],
                                "result_id": result_id

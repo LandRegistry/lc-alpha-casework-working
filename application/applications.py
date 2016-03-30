@@ -1,6 +1,6 @@
 import json
 from application import app
-from application.error import ValidationError, CaseworkAPIError
+from application.error import ValidationError, CaseworkAPIError, raise_error
 from application.documents import get_document, get_image
 import requests
 import logging
@@ -338,7 +338,7 @@ def create_lc_registration(data):
             'forenames': name_data['private']['forenames'],
             'surname': name_data['private']['surname']
         }
-    elif name['type'] == "County Council" or name['type'] == "Parish Council" or name['type'] == "Other Council":
+    elif name['type'] == "County Council" or name['type'] == "Parish Council" or name['type'] == "Rural Council" or name['type'] == "Other Council":
         name['local'] = {
             'name': name_data['local']['name'],
             'area': name_data['local']['area']
@@ -419,27 +419,45 @@ def complete_application(cursor, appn_id, data):
     regns = response.json()
 
     # Insert print job
-    insert_result_row(cursor, regns['request_id'], 'registration')
-    # TODO error handling on inserting print job row
+    errors = []
+    try:
+        insert_result_row(cursor, regns['request_id'], 'registration')
+    except Exception as e:
+        error = "Failed to insert print row. Message: {}".format(str(e))
+        errors.append(error)
+        logging.error(error)
 
     # Archive document
     document_id = data['application_data']['document_id']
-    # pages = get_document(cursor, document_id)
-
     if data['form'] == 'K6':
         reg_type = 'priority_notices'
     else:
         reg_type = 'new_registrations'
 
-    for regn in regns[reg_type]:
-        number = regn['number']
-        date = regn['date']
-        store_image_for_later(cursor, document_id, number, date)
+    try:
+        for regn in regns[reg_type]:
+            number = regn['number']
+            date = regn['date']
+            store_image_for_later(cursor, document_id, number, date)
+    except Exception as e:
+        error = "Failed to insert image for later. Message: {}".format(str(e))
+        errors.append(error)
+        logging.error(error)
+
 
     # Delete work-item
-    delete_application(cursor, appn_id)
+    try:
+        delete_application(cursor, appn_id)
+    except Exception as e:
+        error = "Failed to delete application row. Message: {}".format(str(e))
+        errors.append(error)
+        logging.error(error)
 
     # return regn nos
+
+    for error in errors:
+        raise_error(error)
+
     return regns
 
 
@@ -463,8 +481,8 @@ def bulk_insert_applications(cursor, data):  # pragma: no cover
 # insert a print job row on the result table
 def insert_result_row(cursor, request_id, result_type):
     try:
-        cursor.execute("INSERT into results(request_id, res_type, print_status) values(%(request_id)s, %(res_type)s, "
-                       " %(print_status)s) ",
+        cursor.execute("INSERT into results(request_id, res_type, print_status, insert_timestamp) "
+                       "values(%(request_id)s, %(res_type)s, %(print_status)s, current_timestamp) ",
                        {
                            'request_id': request_id,
                            'res_type': result_type,
@@ -630,8 +648,8 @@ def get_party_name(data):
 
 def get_additional_info(response):
     info = ''
-    if 'additional_information' in response:
-        info = response['additional_information']
+    if 'entered_addl_info' in response:
+        info = response['entered_addl_info']
 
     return info
 
