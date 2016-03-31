@@ -1,10 +1,10 @@
 from PIL import Image, ImageDraw, ImageFont, TiffImagePlugin
 import os
-from io import BytesIO
 import logging
 import json
 import subprocess
 import psycopg2
+from datetime import datetime
 
 
 def draw_text(canvas, text_pos, text, font_name, font_size, font_color):
@@ -21,8 +21,8 @@ def create_ins_image(data, filename, config, registration_no):
     fs_main = 28
     fs_sub = 24
     fs_sub_title = 20
-    fs_text = 16
-
+    fs_text = 18
+    line_gap = 45
     size = (992, 1430)
     im = Image.new('RGB', size, cl_white)
     draw = ImageDraw.Draw(im)
@@ -39,19 +39,20 @@ def create_ins_image(data, filename, config, registration_no):
     draw_text(draw, (100, cursor_pos), 'Particulars of Application:', arialbold, fs_sub_title, cl_black)
     cursor_pos += 30
     draw.line((100, cursor_pos, 900, cursor_pos), fill=0)
-    cursor_pos += 30
+    cursor_pos += line_gap
     label_pos = 150
     data_pos = 400
-    print("data", str(data))
+    logging.debug("OC: ", str(data))
     draw_text(draw, (label_pos, cursor_pos), 'Land Charge Reference: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), registration_no, arial, fs_text, cl_black)
-    cursor_pos += 30
+    cursor_pos += line_gap
     draw_text(draw, (label_pos, cursor_pos), 'Key Number: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), data['key_number'], arial, fs_text, cl_black)
-    cursor_pos += 30
+    cursor_pos += line_gap
     draw_text(draw, (label_pos, cursor_pos), 'Date: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['application_date'], arial, fs_text, cl_black)
-    cursor_pos += 30
+    appn_date = datetime.strptime(data['application_date'], '%Y-%m-%d').strftime("%d.%m.%Y").upper()
+    draw_text(draw, (data_pos, cursor_pos), appn_date, arial, fs_text, cl_black)
+    cursor_pos += line_gap
     draw_text(draw, (label_pos, cursor_pos), 'Adjudicator Reference: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), data['application_ref'], arial, fs_text, cl_black)
     cursor_pos += 50
@@ -64,10 +65,10 @@ def create_ins_image(data, filename, config, registration_no):
         name_count = 1
         for debtor_name in data['debtor_names']:
             if name_count == 1:
-                cursor_pos += 30
+                cursor_pos += line_gap
                 draw_text(draw, (label_pos, cursor_pos), 'Name: ', arial, fs_text, cl_black)
             elif name_count == 2:
-                cursor_pos += 30
+                cursor_pos += line_gap
                 draw_text(draw, (label_pos, cursor_pos), 'Alternative Names: ', arial, fs_text, cl_black)
             else:
                 cursor_pos += 25
@@ -78,16 +79,16 @@ def create_ins_image(data, filename, config, registration_no):
             draw_text(draw, (data_pos, cursor_pos), debtor_forenames + " " +
                       debtor_name['surname'], arial, fs_text, cl_black)
             name_count += 1
-    cursor_pos += 30
+    cursor_pos += line_gap
     draw_text(draw, (150, cursor_pos), 'Gender: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), data['gender'], arial, fs_text, cl_black)
-    cursor_pos += 30
+    cursor_pos += line_gap
     draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, fs_text, cl_black)
-    cursor_pos += 30
+    cursor_pos += line_gap
     draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, fs_text, cl_black)
-    cursor_pos += 30
+    cursor_pos += line_gap
     draw_text(draw, (150, cursor_pos), 'Addresses: ', arial, fs_text, cl_black)
 
     if data['residence_withheld'] is True:
@@ -102,7 +103,7 @@ def create_ins_image(data, filename, config, registration_no):
             draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, cl_black)
             cursor_pos += 25
             draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
-    cursor_pos += 30
+    cursor_pos += line_gap
 
     if 'business_address' in data:
         for address in data['business_address']:
@@ -113,10 +114,6 @@ def create_ins_image(data, filename, config, registration_no):
             draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, cl_black)
             cursor_pos += 25
             draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
-
-
-        # cursor_pos += 25
-        # draw_text(draw, (data_pos, cursor_pos), data['business_address'], arial, fs_text, cl_black)
     cursor_pos += 30
     if 'investment_property' in data:
         for address in data['investment_property']:
@@ -127,9 +124,6 @@ def create_ins_image(data, filename, config, registration_no):
             draw_text(draw, (data_pos, cursor_pos), address['county'], arial, fs_text, cl_black)
             cursor_pos += 25
             draw_text(draw, (data_pos, cursor_pos), address['postcode'], arial, fs_text, cl_black)
-
-        # cursor_pos += 25
-        # draw_text(draw, (data_pos, cursor_pos), data['investment_property'], arial, fs_text, cl_black)
     del draw
 
     directory = config['TEMP_DIR']
