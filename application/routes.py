@@ -924,9 +924,7 @@ def bulk_add_applications():  # pragma: no cover
 
 
 def connect(cursor_factory=None):
-    connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
-        app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
-        app.config['DATABASE_PASSWORD']))
+    connection = psycopg2.connect(app.config['PSQL_CONNECTION'])
     return connection.cursor(cursor_factory=cursor_factory)
 
 
