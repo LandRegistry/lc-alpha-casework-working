@@ -1082,7 +1082,6 @@ def insert_b2b_form():
 
 @app.route('/reprints/<reprint_type>', methods=['GET'])
 def reprints(reprint_type):
-
     request_id = ''
     if reprint_type == 'registration':
         registration_no = request.args['registration_no']
@@ -1096,9 +1095,10 @@ def reprints(reprint_type):
         request_id = data['request_id']
     elif reprint_type == 'search':
         request_id = request.args['request_id']
-    if request_id == '':
-        return Response("Error: could not determine request id", status=400)
-
+    if not request_id:
+        err = "Could not find request for {} of {}.".format(registration_no, registration_date)
+        logging.error(format_message(err))
+        return Response(err, status=400)
     logging.audit(format_message("Request reprint for %s"), request_id)
     # for the time being call reprint on result-generate. this probably needs moving into casework-api
     url = app.config['RESULT_GENERATE_URI'] + '/reprints?request=' + str(request_id)
