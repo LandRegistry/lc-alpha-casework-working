@@ -5,7 +5,7 @@ class Config(object):
     DEBUG = os.getenv('DEBUG', True)
     APPLICATION_NAME = 'lc-casework-api'
 
-    SQLALCHEMY_DATABASE_URI = "postgresql://lc-working-data:lcalpha@localhost/working"
+    SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI", "postgresql://lc-working-data:lcalpha@localhost/working")
     AMQP_URI = os.getenv("AMQP_URI", "amqp://mquser:mqpassword@localhost:5672")
     PSQL_CONNECTION = os.getenv("PSQL_CONNECTION", "dbname='working' user='lc-working-data' host='localhost' password='lcalpha'")
 
