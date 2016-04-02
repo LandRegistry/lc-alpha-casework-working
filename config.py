@@ -19,3 +19,4 @@ class Config(object):
     RESULT_GENERATE_URI = os.getenv('RESULTS_GENERATE_URL', 'http://10.0.2.2:5016')
     # IMAGE_DIRECTORY = '/home/vagrant/interim/'
     AUDIT_LOG_FILENAME = os.getenv("AUDIT_LOG_FILENAME", "/vagrant/logs/casework-api/audit.log")
+    PREGENERATE_QUEUE_NAME = os.getenv('PREGENERATE_QUEUE_NAME', 'pregenerate')
