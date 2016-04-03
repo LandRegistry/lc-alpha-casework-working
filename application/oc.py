@@ -42,7 +42,7 @@ def create_ins_image(data, filename, config, registration_no):
     cursor_pos += line_gap
     label_pos = 150
     data_pos = 400
-    logging.debug("OC: ", str(data))
+    logging.debug("OC: %s", str(data))
     draw_text(draw, (label_pos, cursor_pos), 'Land Charge Reference: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), registration_no, arial, fs_text, cl_black)
     cursor_pos += line_gap
@@ -83,8 +83,10 @@ def create_ins_image(data, filename, config, registration_no):
     draw_text(draw, (150, cursor_pos), 'Gender: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), data['gender'], arial, fs_text, cl_black)
     cursor_pos += line_gap
+
     draw_text(draw, (150, cursor_pos), 'Trading Name: ', arial, fs_text, cl_black)
-    draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, fs_text, cl_black)
+    if 'trading_name' in data:
+        draw_text(draw, (data_pos, cursor_pos), data['trading_name'], arial, fs_text, cl_black)
     cursor_pos += line_gap
     draw_text(draw, (150, cursor_pos), 'Occupation: ', arial, fs_text, cl_black)
     draw_text(draw, (data_pos, cursor_pos), data['occupation'], arial, fs_text, cl_black)

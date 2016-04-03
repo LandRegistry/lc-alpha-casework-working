@@ -4,16 +4,12 @@ import os
 class Config(object):
     DEBUG = os.getenv('DEBUG', True)
     APPLICATION_NAME = 'lc-casework-api'
-    DATABASE_NAME = os.getenv('DATABASE_NAME', 'working')
-    DATABASE_USER = os.getenv('DATABASE_USER', 'lc-working-data')
-    DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD', 'lcalpha')
-    DATABASE_HOST = os.getenv('DATABASE_HOST', 'localhost')
-    SQLALCHEMY_DATABASE_URI = "postgresql://{}:{}@{}/{}".format(DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_NAME)
+
+    SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI", "postgresql://lc-working-data:lcalpha@localhost/working")
+    AMQP_URI = os.getenv("AMQP_URI", "amqp://mquser:mqpassword@localhost:5672")
+    PSQL_CONNECTION = os.getenv("PSQL_CONNECTION", "dbname='working' user='lc-working-data' host='localhost' password='lcalpha'")
+
     ALLOW_DEV_ROUTES = os.getenv('ALLOW_DEV_ROUTES', True)
-    MQ_USERNAME = os.getenv("MQ_USERNAME", "mquser")
-    MQ_PASSWORD = os.getenv("MQ_PASSWORD", "mqpassword")
-    MQ_HOSTNAME = os.getenv("MQ_HOST", "localhost")
-    MQ_PORT = os.getenv("MQ_PORT", "5672")
     ERROR_QUEUE_NAME = os.getenv('ERROR_QUEUE_NAME', "errors")
     TEMP_DIRECTORY = os.getenv('TEMP_DIRECTORY', '/tmp')
     TEMP_DIR = os.getenv('TMPDIR', '/tmp')
@@ -23,3 +19,4 @@ class Config(object):
     RESULT_GENERATE_URI = os.getenv('RESULTS_GENERATE_URL', 'http://10.0.2.2:5016')
     # IMAGE_DIRECTORY = '/home/vagrant/interim/'
     AUDIT_LOG_FILENAME = os.getenv("AUDIT_LOG_FILENAME", "/vagrant/logs/casework-api/audit.log")
+    PREGENERATE_QUEUE_NAME = os.getenv('PREGENERATE_QUEUE_NAME', 'pregenerate')

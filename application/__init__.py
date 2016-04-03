@@ -1,5 +1,4 @@
 from flask import Flask, g
-import os
 from log.logger import setup_logging
 
 

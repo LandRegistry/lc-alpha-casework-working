@@ -7,6 +7,10 @@ import logging
 import psycopg2
 import psycopg2.extras
 import requests
+import threading
+import kombu
+from kombu.common import maybe_declare
+from amqp import AccessRefused
 from datetime import datetime
 from application.applications import insert_new_application, get_application_list, get_application_by_id, \
     bulk_insert_applications, complete_application, delete_application, store_application, \
@@ -30,6 +34,9 @@ valid_types = ['all', 'pab', 'wob',
                'amend', 'cancel', 'canc', 'cancel_part',
                'prt_search', 'search', 'search_full', 'search_bank', 'oc', 'unknown',
                'stored']
+
+
+
 
 
 @app.route('/', methods=["GET"])
@@ -924,9 +931,7 @@ def bulk_add_applications():  # pragma: no cover
 
 
 def connect(cursor_factory=None):
-    connection = psycopg2.connect("dbname='{}' user='{}' host='{}' password='{}'".format(
-        app.config['DATABASE_NAME'], app.config['DATABASE_USER'], app.config['DATABASE_HOST'],
-        app.config['DATABASE_PASSWORD']))
+    connection = psycopg2.connect(app.config['PSQL_CONNECTION'])
     return connection.cursor(cursor_factory=cursor_factory)
 
 
@@ -1068,23 +1073,23 @@ def insert_result(request_id, result_type):
 
 @app.route('/b2b_forms', methods=['POST'])
 def insert_b2b_form():
-    data = request.get_json()
-    logging.audit(format_message("Pre-generate B2B office copy for %s"), json.dumps(data['new_registrations']))
-
-    logging.info(data)
-    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
-    try:
-        create_document(cursor, data, app.config)
-        complete(cursor)
-    except:
-        rollback(cursor)
-        raise
-    return Response(status=200)
+    return Response(status=403)
+    # data = request.get_json()
+    # logging.audit(format_message("Pre-generate B2B office copy for %s"), json.dumps(data['new_registrations']))
+    #
+    # logging.info(data)
+    # cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    # try:
+    #     create_document(cursor, data, app.config)
+    #     complete(cursor)
+    # except:
+    #     rollback(cursor)
+    #     raise
+    # return Response(status=200)
 
 
 @app.route('/reprints/<reprint_type>', methods=['GET'])
 def reprints(reprint_type):
-
     request_id = ''
     if reprint_type == 'registration':
         registration_no = request.args['registration_no']
@@ -1098,9 +1103,10 @@ def reprints(reprint_type):
         request_id = data['request_id']
     elif reprint_type == 'search':
         request_id = request.args['request_id']
-    if request_id == '':
-        return Response("Error: could not determine request id", status=400)
-
+    if not request_id:
+        err = "Could not find request for {} of {}.".format(registration_no, registration_date)
+        logging.error(format_message(err))
+        return Response(err, status=400)
     logging.audit(format_message("Request reprint for %s"), request_id)
     # for the time being call reprint on result-generate. this probably needs moving into casework-api
     url = app.config['RESULT_GENERATE_URI'] + '/reprints?request=' + str(request_id)
@@ -1304,3 +1310,51 @@ def get_next_date_for_registration(date):
     response = requests.get(url, headers=get_headers())
     data = response.json()
     return Response(json.dumps({'date': data['next_working']}), status=200, mimetype='application/json')
+
+
+def message_received(body, message):
+    logging.info("Received notification to pre-generate")
+    cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        create_document(cursor, body, app.config)
+        complete(cursor)
+        message.ack()
+    except:
+        rollback(cursor)
+        raise
+    return Response(status=200)
+
+
+def listen(incoming_connection):
+    logging.info('Listening for new b2b subs')
+    while True:
+        try:
+            incoming_connection.drain_events()
+
+        except KeyboardInterrupt:
+            logging.info("Interrupted")
+            break
+        except Exception as exception:
+            raise_error({"text": str(exception)})
+            logging.error(str(exception))
+
+
+def setup_incoming(hostname):
+    connection = kombu.Connection(hostname=hostname)
+    connection.connect()
+    queue = kombu.Queue(app.config['PREGENERATE_QUEUE_NAME'])
+    consumer = kombu.Consumer(connection.channel(), queues=queue, callbacks=[message_received], accept=['json'])
+    consumer.consume()
+    return connection, consumer
+
+
+def listen_for_b2b():
+    hostname = app.config['AMQP_URI']
+    incoming_connection, incoming_consumer = setup_incoming(hostname)
+    listen(incoming_connection)
+    incoming_consumer.close()
+
+
+pregen_thread = threading.Thread(name='pregenerate', target=listen_for_b2b)
+pregen_thread.daemon = True
+pregen_thread.start()
