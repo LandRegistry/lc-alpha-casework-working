@@ -1100,8 +1100,15 @@ def reprints(reprint_type):
     # for the time being call reprint on result-generate. this probably needs moving into casework-api
     url = app.config['RESULT_GENERATE_URI'] + '/reprints?request=' + str(request_id)
     response = requests.get(url, headers=get_headers())
-    return send_file(BytesIO(response.content), as_attachment=False, attachment_filename='reprint.pdf',
-                     mimetype='application/pdf')
+    if response.headers['content-type'] == 'application/pdf':
+        return send_file(BytesIO(response.content), as_attachment=False, attachment_filename='reprint.pdf',
+                         mimetype='application/pdf')
+    else:
+        err = "An error occured {}.".format(response.text)
+        logging.error(format_message(err))
+        return Response(err, status=405)
+
+
 
 
 @app.route('/reprints/search', methods=['POST'])
