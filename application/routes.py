@@ -16,7 +16,7 @@ from application.applications import insert_new_application, get_application_lis
     bulk_insert_applications, complete_application, delete_application, store_application, \
     amend_application, set_lock_ind, clear_lock_ind, insert_result_row, cancel_application, \
     get_registration_details, store_image_for_later, get_headers, correct_application, get_work_type, \
-    reclassify_appn, renew_application
+    reclassify_appn, renew_application, get_print_requests
 from application.documents import get_document, get_image, get_raw_image
 from application.error import raise_error
 import io
@@ -1041,18 +1041,7 @@ def get_result(result_id):
 def get_results():
     cursor = connect(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        cursor.execute("SELECT id, request_id, res_type " +
-                       "FROM results Where print_status <> 'Y' ORDER BY res_type ")
-        rows = cursor.fetchall()
-        logging.debug("row count = " + str(len(rows)))
-        res_list = []
-        rowcount = 1
-        for row in rows:
-            job = {
-                'id': row['id'], 'request_id': row['request_id'], 'res_type': row['res_type']
-            }
-            rowcount += 1
-            res_list.append(job)
+        res_list = get_print_requests(cursor)
     finally:
         complete(cursor)
     return Response(json.dumps(res_list), status=200, mimetype='application/json')

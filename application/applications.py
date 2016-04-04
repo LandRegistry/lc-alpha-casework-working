@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 import logging
 from flask import request
+import operator
 
 
 def get_headers(headers=None):
@@ -338,7 +339,8 @@ def create_lc_registration(data):
             'forenames': name_data['private']['forenames'],
             'surname': name_data['private']['surname']
         }
-    elif name['type'] == "County Council" or name['type'] == "Parish Council" or name['type'] == "Rural Council" or name['type'] == "Other Council":
+    elif name['type'] == "County Council" or name['type'] == \
+            "Parish Council" or name['type'] == "Rural Council" or name['type'] == "Other Council":
         name['local'] = {
             'name': name_data['local']['name'],
             'area': name_data['local']['area']
@@ -443,7 +445,6 @@ def complete_application(cursor, appn_id, data):
         error = "Failed to insert image for later. Message: {}".format(str(e))
         errors.append(error)
         logging.error(error)
-
 
     # Delete work-item
     try:
@@ -672,3 +673,26 @@ def reclassify_appn(cursor, appn_id, form_type, work_type):
         return None
     else:
         return "success"
+
+
+def get_print_requests(cursor):
+    cursor.execute("SELECT id, request_id, res_type " +
+                   "FROM results Where print_status <> 'Y' ORDER BY res_type ")
+    rows = cursor.fetchall()
+    logging.debug("row count = " + str(len(rows)))
+    res_list = []
+    rowcount = 1
+
+    for row in rows:
+        job = {
+            'id': row['id'], 'request_id': row['request_id'], 'res_type': row['res_type'], 'customer_addr_type': ''
+        }
+        url = app.config['LAND_CHARGES_URI'] + '/applicant/' + row['request_id']
+        response = requests.get(url, headers=get_headers())
+        data = response.json()
+        if 'customer_addr_type' in data:
+            job["customer_addr_type"] = data["customer_addr_type"]
+        rowcount += 1
+        res_list.append(job)
+    res_list = sorted(res_list, key=operator.itemgetter('res_type', 'customer_addr_type'))
+    return res_list
