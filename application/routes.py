@@ -1093,7 +1093,9 @@ def reprints(reprint_type):
     elif reprint_type == 'search':
         request_id = request.args['request_id']
     if not request_id:
-        err = "Could not find request for {} of {}.".format(registration_no, registration_date)
+        datetime.strptime(registration_date, '%Y-%m-%d')
+        formatted_registration_date = datetime.strptime(registration_date, '%Y-%m-%d').strftime('%d/%m/%Y')
+        err = "Could not find request for {} of {}.".format(registration_no, formatted_registration_date)
         logging.error(format_message(err))
         return Response(err, status=400)
     logging.audit(format_message("Request reprint for %s"), request_id)
