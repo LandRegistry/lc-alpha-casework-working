@@ -1,0 +1,27 @@
+{
+  "residence_withheld": true,
+  "investment_property": [],
+  "occupation": "",
+  "application_ref": "1222",
+  "date": "2004-08-25",
+  "debtor_name": {
+    "surname": "millis",
+    "forenames": [
+      "steve"
+    ]
+  },
+  "residence": [],
+  "date_of_birth": "1991-10-10",
+  "key_number": "152765",
+  "trading_name": "",
+  "application_type": "WO(B)",
+  "gender": "male",
+  "debtor_alternative_name": [
+    {
+      "surname": "",
+      "forenames": [
+        ""
+      ]
+    }
+  ]
+}
