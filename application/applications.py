@@ -676,7 +676,7 @@ def reclassify_appn(cursor, appn_id, form_type, work_type):
 
 
 def get_print_requests(cursor):
-    cursor.execute("SELECT id, request_id, res_type " +
+    cursor.execute("SELECT id, request_id, res_type, print_status " +
                    "FROM results Where print_status <> 'Y' ORDER BY res_type ")
     rows = cursor.fetchall()
     logging.debug("row count = " + str(len(rows)))
