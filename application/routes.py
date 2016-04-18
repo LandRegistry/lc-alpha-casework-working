@@ -1293,7 +1293,6 @@ def save_request_fee(id, fee):
     return Response(status=response.status_code, mimetype='application/json')
 
 
-
 @app.route('/multi_reg_check/<reg_date>/<reg_no>', methods=['GET'])
 def get_multi_reg_check(reg_date, reg_no):
     logging.audit(format_message("Check multiple registration for %s %s"), reg_no, reg_date)
@@ -1307,7 +1306,7 @@ def get_next_date_for_registration(date):
     url = app.config['LEGACY_ADAPTER_URI'] + '/dates/' + date
     response = requests.get(url, headers=get_headers())
     data = response.json()
-    return Response(json.dumps({'date': data['next_working']}), status=200, mimetype='application/json')
+    return Response(json.dumps({'next_working': data['next_working'], 'is_working': data['is_working']}), status=200, mimetype='application/json')
 
 
 def message_received(body, message):
