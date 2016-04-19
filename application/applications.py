@@ -685,7 +685,8 @@ def get_print_requests(cursor):
 
     for row in rows:
         job = {
-            'id': row['id'], 'request_id': row['request_id'], 'res_type': row['res_type'], 'customer_addr_type': ''
+            'id': row['id'], 'request_id': row['request_id'], 'res_type': row['res_type'], 'customer_addr_type': '',
+            'print_status': row['print_status']
         }
         url = app.config['LAND_CHARGES_URI'] + '/applicant/' + row['request_id']
         response = requests.get(url, headers=get_headers())
