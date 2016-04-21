@@ -103,6 +103,12 @@ image_data = [
             {'pattern': 'Rule 6\.49', 'result': 'WO(B)'},
             {'pattern': 'Rule 6\.34', 'result': 'WO(B)'}
         ]
+    },
+    {
+        'bounds': [0.107371794871795, 0.0787221905305191, 0.384294871794872, 0.0535539075869937],
+        'options': [  # Central London County Court PABs
+            {'pattern': 'RULE 6.?13.?\s+6.?43', 'result': 'PA(B)'}
+        ]
     }
 ]
 
@@ -122,18 +128,15 @@ def recognise(filename):
         text = image_to_string(cropped)
         text = re.sub("\r?\n", "", text)
         text_log.append('Block: "' + text + '"')
-
         for option in item['options']:
             match = re.search(option['pattern'], text)
             text_log.append('  Test: "' + option['pattern'] + '"')
-
             if match is not None:
                 logging.info("Identified " + option['result'])
                 logging.info("Using block " + str(index))
                 logging.info("On text '" + text + "'")
                 logging.info('----')
                 return option['result']
-
     for line in text_log:
         logging.debug(line)
     return "Unknown"
