@@ -564,6 +564,10 @@ def convert_response_data(api_data):
               'occupation': get_occupation(api_data['parties'][0]),
               'additional_info': get_additional_info(api_data)
               }
+
+    if 'additional_classes' in api_data:
+        result['additional_classes'] = api_data['additional_classes']
+
     if 'particulars' in api_data:
         if 'counties' in api_data['particulars']:
             result['county'] = api_data['particulars']['counties']
