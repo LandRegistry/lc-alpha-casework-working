@@ -279,7 +279,13 @@ def correct_application(cursor, data):
     logging.debug("begin to correct application" + json.dumps(data))
     date = data['orig_regn']['date']
     reg_no = data['orig_regn']['number']
-    reg_data = data['registration']
+
+    if 'lc_register_details' in data:
+        reg_data = create_lc_registration(data)
+        reg_data['update_registration'] = data['update_registration']
+    else:
+        reg_data = data['registration']
+
     url = app.config['LAND_CHARGES_URI'] + '/registrations/' + date + '/' + reg_no
     headers = get_headers({'Content-Type': 'application/json'})
     response = requests.put(url, data=json.dumps(reg_data), headers=headers)
@@ -290,7 +296,8 @@ def correct_application(cursor, data):
     regns = response.json()
 
     if data['k22'] is True:
-        insert_result_row(cursor, regns['request_id'], 'registration')
+        if 'print_location' not in data or data['print_location'] == 'central':
+            insert_result_row(cursor, regns['request_id'], 'registration')
 
     return regns
 
